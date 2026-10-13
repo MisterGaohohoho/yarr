@@ -301,10 +301,26 @@ select.form-control:not([multiple]):not([size]) {
   flex-shrink: 0;
 }
 
+.content-attribution {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: .3rem;
+}
+
+.content-author {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.content-author-name {
+  min-width: 0;
+}
+
 .content-attribution .author-icon {
-  margin-left: .3rem;
   margin-right: .25rem;
-  vertical-align: -.1em;
 }
 
 .item-list-image {

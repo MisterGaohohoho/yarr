@@ -505,6 +505,14 @@ test('article authors follow source scope and stay visible in details', async ()
   await p.waitForFunction(id => vm.itemSelectedDetails && vm.itemSelectedDetails.id === id, byIndex(2).id)
   assert.equal((await p.locator('.content-source-name').textContent()).trim(), 'first source')
   assert.equal(await p.locator('.content-author-name').textContent(), 'first source')
+  const alignment = await p.locator('.content-attribution').evaluate(el => {
+    const icon = el.querySelector('.author-icon').getBoundingClientRect()
+    const author = el.querySelector('.content-author-name').getBoundingClientRect()
+    const source = el.querySelector('.content-source-name').getBoundingClientRect()
+    return {icon: icon.top + icon.height / 2, author: author.top + author.height / 2, source: source.top + source.height / 2}
+  })
+  assert.ok(Math.abs(alignment.icon - alignment.author) <= 1, JSON.stringify(alignment))
+  assert.ok(Math.abs(alignment.source - alignment.author) <= 1, JSON.stringify(alignment))
   for (const mode of ['normal', 'readability', 'embed']) {
     await p.evaluate(mode => { vm.itemSelectedContentMode = mode; return vm.$nextTick() }, mode)
     assert.equal(await p.locator('.content-author-name').isVisible(), true)
