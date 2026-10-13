@@ -1,10 +1,12 @@
 FROM golang:alpine3.21 AS build
 RUN apk add build-base git
 WORKDIR /src
+COPY go.mod go.sum ./
+COPY vendor ./vendor
+# Preserve the Go dependency build cache in a layer shared by release builds.
+RUN CGO_ENABLED=1 go build -tags "sqlite_foreign_keys sqlite_json" ./vendor/...
 COPY . .
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/root/go/pkg \
-  make host
+RUN make host
 
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates && update-ca-certificates
