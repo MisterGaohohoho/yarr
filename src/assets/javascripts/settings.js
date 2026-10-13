@@ -162,6 +162,18 @@ var settingsMixin = {
       if (this.current.type === 'feed' && this.current.feed.id) this.showFeedSettings(this.current.feed)
       if (this.current.type === 'folder' && this.current.folder.id) this.showFolderSettings(this.current.folder)
     },
+    syncSelectionSettings: function() {
+      if (this.feedSelected === null || this.settingsClosing || ['feed', 'folder', 'menu'].indexOf(this.settings) === -1) return
+      var page = {name: 'menu'}
+      if (this.current.type === 'feed' && this.current.feed.id) page = {name: 'feed', feedId: this.current.feed.id}
+      else if (this.current.type === 'folder' && this.current.folder.id) page = {name: 'folder', folderId: this.current.folder.id}
+      var previous = this.settingsPage()
+      if (previous.name === page.name && previous.feedId == page.feedId && previous.folderId == page.folderId) return
+      this.saveSettingsScroll()
+      if (page.name === 'menu') this.settingsStack = []
+      this.restoreSettingsPage(page)
+      this.replaceSettingsHistory()
+    },
     backSettings: function() {
       if (this.dialog.open) return this.cancelDialog()
       if (!this.settingsStack.length) return this.closeSettings()

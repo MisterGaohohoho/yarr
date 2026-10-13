@@ -76,6 +76,7 @@ type Item struct {
 	GUID       string     `json:"guid"`
 	FeedId     int64      `json:"feed_id"`
 	Title      string     `json:"title"`
+	Author     string     `json:"author"`
 	Link       string     `json:"link"`
 	Content    string     `json:"content,omitempty"`
 	Date       time.Time  `json:"date"`
@@ -209,20 +210,21 @@ func (s *Storage) CreateRankingModeItem(item Item, rankingMD5 string) bool {
 }
 
 func createItemTx(tx *sql.Tx, item Item, arrivedAt time.Time) (bool, error) {
+	item.Author = strings.TrimSpace(item.Author)
 	result, err := tx.Exec(`
 		insert into items (
 			guid, feed_id, title, link, date,
-			content, media_links,
+			content, media_links, author,
 			date_arrived, status, favorite
 		)
 		values (
 			?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%f', ?),
-			?, ?,
+			?, ?, ?,
 			?, ?, false
 		)
 		on conflict (feed_id, guid) do nothing`,
 		item.GUID, item.FeedId, item.Title, item.Link, item.Date,
-		item.Content, item.MediaLinks,
+		item.Content, item.MediaLinks, item.Author,
 		arrivedAt, UNREAD,
 	)
 	if err != nil {
@@ -234,6 +236,12 @@ func createItemTx(tx *sql.Tx, item Item, arrivedAt time.Time) (bool, error) {
 	}
 	if rows == 1 {
 		return true, nil
+	}
+
+	if item.Author != "" {
+		if _, err := tx.Exec(`update items set author = ? where feed_id = ? and guid = ?`, item.Author, item.FeedId, item.GUID); err != nil {
+			return false, err
+		}
 	}
 
 	_, err = tx.Exec(`
@@ -384,7 +392,7 @@ func listItems(queryer itemQueryer, filter ItemFilter, limit int, newestFirst bo
 		order = "i.id desc"
 	}
 
-	selectCols := "i.id, i.guid, i.feed_id, i.title, i.link, i.date, i.status, i.favorite, i.media_links"
+	selectCols := "i.id, i.guid, i.feed_id, i.title, i.link, i.date, i.status, i.favorite, i.media_links, coalesce(i.author, '')"
 	if withContent {
 		selectCols += ", i.content"
 	} else {
@@ -408,7 +416,7 @@ func listItems(queryer itemQueryer, filter ItemFilter, limit int, newestFirst bo
 		err = rows.Scan(
 			&x.Id, &x.GUID, &x.FeedId,
 			&x.Title, &x.Link, &x.Date,
-			&x.Status, &x.Favorite, &x.MediaLinks, &x.Content,
+			&x.Status, &x.Favorite, &x.MediaLinks, &x.Author, &x.Content,
 		)
 		if err != nil {
 			log.Print(err)
@@ -470,12 +478,12 @@ func (s *Storage) GetItem(id int64) *Item {
 	err := s.db.QueryRow(`
 		select
 			i.id, i.guid, i.feed_id, i.title, i.link, i.content,
-			i.date, i.status, i.favorite, i.media_links
+			i.date, i.status, i.favorite, i.media_links, coalesce(i.author, '')
 		from items i
 		where i.id = ?
 	`, id).Scan(
 		&i.Id, &i.GUID, &i.FeedId, &i.Title, &i.Link, &i.Content,
-		&i.Date, &i.Status, &i.Favorite, &i.MediaLinks,
+		&i.Date, &i.Status, &i.Favorite, &i.MediaLinks, &i.Author,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -492,12 +500,12 @@ func (s *Storage) GetItemByGUID(feedID int64, guid string) *Item {
 	err := s.db.QueryRow(`
 		select
 			i.id, i.guid, i.feed_id, i.title, i.link, i.content,
-			i.date, i.status, i.favorite, i.media_links
+			i.date, i.status, i.favorite, i.media_links, coalesce(i.author, '')
 		from items i
 		where i.feed_id = ? and i.guid = ?
 	`, feedID, guid).Scan(
 		&i.Id, &i.GUID, &i.FeedId, &i.Title, &i.Link, &i.Content,
-		&i.Date, &i.Status, &i.Favorite, &i.MediaLinks,
+		&i.Date, &i.Status, &i.Favorite, &i.MediaLinks, &i.Author,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

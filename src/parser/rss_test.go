@@ -122,7 +122,7 @@ func TestRSSDublinCoreCreator(t *testing.T) {
 	if feed.Items[0].Author != "scp" {
 		t.Fatalf("got %q", feed.Items[0].Author)
 	}
-	if feed.Items[1].Author != "author wins" {
+	if feed.Items[1].Author != "dc creator" {
 		t.Fatalf("got %q", feed.Items[1].Author)
 	}
 }

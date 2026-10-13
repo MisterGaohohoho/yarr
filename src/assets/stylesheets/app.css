@@ -263,6 +263,50 @@ select.form-control:not([multiple]):not([size]) {
   margin-bottom: .1rem;
 }
 
+.item-list-attribution {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: .3rem;
+}
+
+.item-source-name,
+.item-author {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.item-list-attribution.has-author .item-source-name {
+  max-width: 50%;
+}
+
+.item-author {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.item-author-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.author-icon,
+.author-icon > svg {
+  width: 1em;
+  height: 1em;
+}
+
+.author-icon {
+  flex-shrink: 0;
+}
+
+.content-attribution .author-icon {
+  margin-left: .3rem;
+  margin-right: .25rem;
+  vertical-align: -.1em;
+}
+
 .item-list-image {
   width: 72px;
   height: 54px;

@@ -61,8 +61,8 @@ before(async () => {
     }
     res.setHeader('content-type', 'application/rss+xml')
     const prefix = req.url.includes('second') ? 'second' : 'first'
-    res.end(`<?xml version="1.0"?><rss version="2.0"><channel><title>${prefix} source</title><link>${fixtureBase}</link><description>UI fixtures</description><image><url>${fixtureBase}/icon.svg</url><title>RSS</title><link>${fixtureBase}</link></image>` +
-      Array.from({length: 8}, (_, index) => `<item><guid>${prefix}-${index}</guid><title>Article ${prefix} ${index}</title><link>${fixtureBase}/article/${prefix}/${index}</link><description><![CDATA[<img src="${fixtureBase}/icon.svg" alt="RSS"><p>${'Article body for navigation testing. '.repeat(300)}</p>]]></description></item>`).join('') + '</channel></rss>')
+    res.end(`<?xml version="1.0"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>${prefix} source</title><link>${fixtureBase}</link><description>UI fixtures</description><image><url>${fixtureBase}/icon.svg</url><title>RSS</title><link>${fixtureBase}</link></image>` +
+      Array.from({length: 8}, (_, index) => `<item><guid>${prefix}-${index}</guid><title>Article ${prefix} ${index}</title>${index === 1 ? '' : `<dc:creator><![CDATA[${['Writer Name', '', prefix + ' source', 'source', prefix + ' source extra', prefix.toUpperCase() + ' SOURCE', '很长的作者名称'.repeat(30), '<img src=x onerror=alert(1)>'][index]}]]></dc:creator>`}<link>${fixtureBase}/article/${prefix}/${index}</link><description><![CDATA[<img src="${fixtureBase}/icon.svg" alt="RSS"><p>${'Article body for navigation testing. '.repeat(300)}</p>]]></description></item>`).join('') + '</channel></rss>')
   })
   await new Promise(resolve => fixture.listen(0, '127.0.0.1', resolve))
   fixtureBase = 'http://127.0.0.1:' + fixture.address().port
@@ -476,4 +476,130 @@ test('Bilibili Cookie settings save without revealing or retaining the credentia
   await p.waitForFunction(() => vm.settings === '')
   assert.equal(await p.evaluate(() => vm.bilibiliCookieDraft), '')
   await close(p)
+})
+
+test('article authors follow source scope and stay visible in details', async () => {
+  const p = await page()
+  const articles = (await (await api('/api/items?feed_id=' + feeds[0].id)).json()).list
+  const byIndex = index => articles.find(item => item.guid === 'first-' + index)
+  const row = index => p.locator(`.selectgroup[data-item-id="${byIndex(index).id}"]`)
+  await p.evaluate(() => { vm.feedSelected = ''; vm.filterSelected = '' })
+  await p.waitForFunction(() => !vm.loading.items && vm.items.length >= 16)
+  for (const layout of ['list', 'card']) {
+    await p.evaluate(layout => { vm.articleListLayout = layout; return vm.$nextTick() }, layout)
+    assert.equal(await row(0).locator('.item-source-name').textContent(), 'first source')
+    assert.equal(await row(0).locator('.item-author-name').textContent(), 'Writer Name')
+    assert.equal(await row(0).locator('.author-icon').count(), 1)
+    for (const index of [1, 2, 3, 4, 5]) assert.equal(await row(index).locator('.item-author').count(), 0)
+    assert.equal(await row(1).locator('.item-source-name').textContent(), 'first source')
+  }
+  await p.evaluate(id => { vm.feedSelected = 'feed:' + id }, feeds[0].id)
+  await p.waitForFunction(id => vm.current.feed.id === id && !vm.loading.items && vm.items.length === 8, feeds[0].id)
+  assert.equal(await row(0).locator('.item-source-name').count(), 0)
+  assert.equal(await row(0).locator('.item-author-name').textContent(), 'Writer Name')
+  assert.equal(await row(1).locator('.item-source-name').textContent(), 'first source')
+  assert.equal(await row(2).locator('.item-author-name').textContent(), 'first source')
+  assert.equal(await row(7).locator('.item-author-name img').count(), 0)
+  assert.equal(await row(7).locator('.item-author-name').textContent(), '<img src=x onerror=alert(1)>')
+  await row(2).locator('.selectgroup-label').click()
+  await p.waitForFunction(id => vm.itemSelectedDetails && vm.itemSelectedDetails.id === id, byIndex(2).id)
+  assert.equal((await p.locator('.content-source-name').textContent()).trim(), 'first source')
+  assert.equal(await p.locator('.content-author-name').textContent(), 'first source')
+  for (const mode of ['normal', 'readability', 'embed']) {
+    await p.evaluate(mode => { vm.itemSelectedContentMode = mode; return vm.$nextTick() }, mode)
+    assert.equal(await p.locator('.content-author-name').isVisible(), true)
+  }
+  await p.evaluate(id => { vm.feedSelected = 'feed:' + id }, feeds[1].id)
+  await p.waitForFunction(id => vm.current.feed.id === id && !vm.loading.items, feeds[1].id)
+  assert.equal((await p.locator('.content-source-name').textContent()).trim(), 'first source')
+  assert.equal(await p.locator('.content-author-name').textContent(), 'first source')
+  await api('/api/items/' + byIndex(0).id, 'PUT', {status: 'unread', favorite: true})
+  for (const filter of ['unread', 'favorite']) {
+    await p.evaluate(({id, filter}) => { vm.feedSelected = 'feed:' + id; vm.filterSelected = filter }, {id: feeds[0].id, filter})
+    await p.waitForFunction(id => !vm.loading.items && vm.items.some(item => item.id === id), byIndex(0).id)
+    assert.equal(await row(0).locator('.item-source-name').count(), 0)
+    assert.equal(await row(0).locator('.item-author-name').textContent(), 'Writer Name')
+  }
+  const folder = await (await api('/api/folders', 'POST', {title: 'Author scope'})).json()
+  try {
+    await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: folder.id})
+    await p.evaluate(async id => { await vm.refreshFeeds(); vm.filterSelected = ''; vm.feedSelected = 'folder:' + id }, folder.id)
+    await p.waitForFunction(() => vm.current.type === 'folder' && !vm.loading.items && vm.items.length === 8)
+    assert.equal(await row(0).locator('.item-source-name').textContent(), 'first source')
+    assert.equal(await row(0).locator('.item-author-name').textContent(), 'Writer Name')
+  } finally {
+    await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: null})
+    await api('/api/folders/' + folder.id, 'DELETE')
+  }
+  await close(p)
+})
+
+test('long article authors truncate in lists and wrap in details on phones', async () => {
+  const p = await page()
+  const articles = (await (await api('/api/items?feed_id=' + feeds[0].id)).json()).list
+  const long = articles.find(item => item.guid === 'first-6')
+  await p.evaluate(() => { vm.filterSelected = ''; vm.feedSelected = ''; vm.itemSelected = null })
+  await p.waitForFunction(id => !vm.loading.items && vm.items.some(item => item.id === id), long.id)
+  for (const width of [1440, 390, 320]) {
+    await p.setViewportSize({width, height: 900})
+    for (const theme of ['light', 'sepia', 'night']) for (const layout of ['list', 'card']) {
+      await p.evaluate(({theme, layout}) => { vm.theme.name = theme; vm.articleListLayout = layout; return vm.$nextTick() }, {theme, layout})
+      const label = p.locator(`.selectgroup[data-item-id="${long.id}"]`)
+      await label.scrollIntoViewIfNeeded()
+      const name = label.locator('.item-author-name')
+      assert.equal(await name.getAttribute('title'), long.author)
+      const sizes = await label.evaluate(el => ({width: el.clientWidth, scroll: el.scrollWidth, meta: el.querySelector('.item-list-meta').clientWidth, metaScroll: el.querySelector('.item-list-meta').scrollWidth}))
+      assert.ok(sizes.scroll <= sizes.width + 1 && sizes.metaScroll <= sizes.meta + 1, JSON.stringify({width, theme, layout, sizes}))
+      assert.equal(await label.locator('.author-icon').isVisible(), true)
+      assert.equal(await label.locator('.item-list-meta time').isVisible(), true)
+    }
+  }
+  await p.locator(`.selectgroup[data-item-id="${long.id}"] .selectgroup-label`).click()
+  await p.waitForFunction(id => vm.itemSelectedDetails && vm.itemSelectedDetails.id === id, long.id)
+  assert.equal(await p.locator('.content-author-name').textContent(), long.author)
+  const detail = await p.locator('.content-attribution').evaluate(el => ({width: el.clientWidth, scroll: el.scrollWidth}))
+  assert.ok(detail.scroll <= detail.width + 1, JSON.stringify(detail))
+  await close(p)
+})
+
+test('open source settings follow feed folder and all-source selections', async () => {
+  const folder = await (await api('/api/folders', 'POST', {title: 'Selection settings'})).json()
+  try {
+    await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: folder.id})
+    for (const width of [1440, 390]) {
+      const p = await page(width)
+      await p.evaluate(() => { vm.filterSelected = '' })
+      await feedSettings(p, feeds[0].id)
+      await p.getByRole('button', {name: '编辑标题', exact: true}).click()
+      await p.getByRole('textbox', {name: '标题', exact: true}).fill('First source draft')
+      const historyLength = await p.evaluate(() => history.length)
+      await p.evaluate(id => { vm.feedSelected = 'feed:' + id; return vm.$nextTick() }, feeds[1].id)
+      assert.equal(await p.evaluate(() => vm.settingsFeed.id), feeds[1].id)
+      assert.equal(await p.evaluate(() => vm.settings), 'feed')
+      assert.equal((await p.locator('#settings-heading').textContent()).trim(), feeds[1].title)
+      assert.equal(await p.evaluate(() => history.length), historyLength)
+      await p.evaluate(id => { vm.feedSelected = 'folder:' + id; return vm.$nextTick() }, folder.id)
+      assert.equal(await p.evaluate(() => vm.settings), 'folder')
+      assert.equal(await p.evaluate(() => vm.settingsFolder.id), folder.id)
+      assert.equal((await p.locator('#settings-heading').textContent()).trim(), folder.title)
+      await p.evaluate(() => { vm.feedSelected = ''; return vm.$nextTick() })
+      assert.equal(await p.evaluate(() => vm.settings), 'menu')
+      assert.equal((await p.locator('#settings-heading').textContent()).trim(), '系统设置')
+      await p.evaluate(id => { vm.feedSelected = 'feed:' + id; return vm.$nextTick() }, feeds[0].id)
+      assert.equal(await p.evaluate(() => vm.settingsFeed.id), feeds[0].id)
+      assert.equal(await p.getByRole('textbox', {name: '标题', exact: true}).inputValue(), 'First source draft')
+      if (width === 390) assert.equal(await p.evaluate(() => history.state.settingsPage.feedId), feeds[0].id)
+      await p.getByRole('button', {name: '关闭设置', exact: true}).click()
+      await p.waitForFunction(() => !vm.settings)
+      assert.equal(await p.evaluate(() => vm.current.feed.id), feeds[0].id)
+      await p.evaluate(() => vm.showSettings('auth'))
+      await p.waitForFunction(() => !vm.settingsPending['auth-load'])
+      await p.evaluate(id => { vm.feedSelected = 'feed:' + id; return vm.$nextTick() }, feeds[1].id)
+      assert.equal(await p.evaluate(() => vm.settings), 'auth')
+      await close(p)
+    }
+  } finally {
+    await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: null})
+    await api('/api/folders/' + folder.id, 'DELETE')
+  }
 })

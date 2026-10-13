@@ -31,15 +31,16 @@ type rssImage struct {
 type rssItem struct {
 	GUID        rssGuid        `xml:"guid"`
 	Title       string         `xml:"title"`
-	Author      string         `xml:"author"`
+	Author      xmlAuthor      `xml:"rss author"`
 	Link        string         `xml:"rss link"`
 	Description rssDescription `xml:"rss description"`
 	PubDate     string         `xml:"pubDate"`
 	Enclosures  []rssEnclosure `xml:"enclosure"`
 
-	DublinCoreDate    string `xml:"http://purl.org/dc/elements/1.1/ date"`
-	DublinCoreCreator string `xml:"http://purl.org/dc/elements/1.1/ creator"`
-	ContentEncoded    string `xml:"http://purl.org/rss/1.0/modules/content/ encoded"`
+	DublinCoreDate    string    `xml:"http://purl.org/dc/elements/1.1/ date"`
+	DublinCoreCreator xmlAuthor `xml:"http://purl.org/dc/elements/1.1/ creator"`
+	DublinCoreAuthor  xmlAuthor `xml:"http://purl.org/dc/elements/1.1/ author"`
+	ContentEncoded    string    `xml:"http://purl.org/rss/1.0/modules/content/ encoded"`
 
 	OrigLink          string `xml:"http://rssnamespace.org/feedburner/ext/1.0 origLink"`
 	OrigEnclosureLink string `xml:"http://rssnamespace.org/feedburner/ext/1.0 origEnclosureLink"`
@@ -203,7 +204,7 @@ func ParseRSS(r io.Reader) (*Feed, error) {
 			Date:       dateParse(firstNonEmpty(srcitem.DublinCoreDate, srcitem.PubDate)),
 			URL:        firstNonEmpty(srcitem.OrigLink, srcitem.Link, permalink),
 			Title:      srcitem.Title,
-			Author:     strings.TrimSpace(firstNonEmpty(srcitem.Author, srcitem.DublinCoreCreator)),
+			Author:     firstNonEmpty(string(srcitem.DublinCoreCreator), string(srcitem.Author), string(srcitem.DublinCoreAuthor)),
 			Content:    firstNonEmpty(srcitem.ContentEncoded, srcitem.Description.String(), srcitem.firstMediaDescription()),
 			MediaLinks: mediaLinks,
 		})

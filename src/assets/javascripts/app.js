@@ -700,6 +700,7 @@ var vm = new Vue({
         this.articleListLayout = layout
       }
       writeFeedSelected(newVal)
+      this.syncSelectionSettings()
       this.refreshItems(false)
       if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0
       this.syncNavigationHistory()
@@ -757,6 +758,20 @@ var vm = new Vue({
     },
   },
   methods: {
+    itemAttribution: function(item, detail) {
+      item = item || {}
+      var source = String((this.feedsById[item.feed_id] || {}).title || '').trim()
+      var author = String(item.author || '').trim()
+      if (!detail && author) {
+        if (this.current.type === 'feed') source = ''
+        else if (source) {
+          var sourceCompare = source.toLowerCase()
+          var authorCompare = author.toLowerCase()
+          if (sourceCompare.includes(authorCompare) || authorCompare.includes(sourceCompare)) author = ''
+        }
+      }
+      return {source: source, author: author}
+    },
     updateMetaTheme: function(theme) {
       document.querySelector("meta[name='theme-color']").content = this.themeColors[theme]
     },

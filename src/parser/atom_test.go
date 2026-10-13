@@ -44,6 +44,7 @@ func TestAtom(t *testing.T) {
 				Date:    time.Unix(1071340202, 0).UTC(),
 				URL:     "http://example.org/2003/12/13/atom03.html",
 				Title:   "Atom-Powered Robots Run Amok",
+				Author:  "John Doe",
 				Content: `<div xmlns="http://www.w3.org/1999/xhtml"><p>This is the entry content.</p></div>`,
 			},
 		},

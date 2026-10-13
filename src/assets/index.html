@@ -242,8 +242,12 @@
                                         <span key="unread" class="icon icon-small mr-1" v-if="item.status=='unread'">{% inline "circle-full.svg" %}</span>
                                         <span key="favorite" class="icon icon-small mr-1" v-if="item.favorite">{% inline "star-full.svg" %}</span>
                                     </transition-group>
-                                    <small class="flex-fill text-truncate mr-1">
-                                        {{ (feedsById[item.feed_id] || {}).title }}
+                                    <small class="item-list-attribution flex-fill mr-1" :class="{'has-author': !!itemAttribution(item).author}">
+                                        <span v-if="itemAttribution(item).source" class="item-source-name text-truncate" :title="itemAttribution(item).source">{{ itemAttribution(item).source }}</span>
+                                        <span v-if="itemAttribution(item).author" class="item-author" :aria-label="'作者：' + itemAttribution(item).author">
+                                            <span class="icon author-icon" title="作者" aria-hidden="true">{% inline "user.svg" %}</span>
+                                            <span class="item-author-name text-truncate" :title="itemAttribution(item).author">{{ itemAttribution(item).author }}</span>
+                                        </span>
                                     </small>
                                     <small class="flex-shrink-0"><relative-time v-bind:title="formatDate(item.date)" :val="item.date"/></small>
                                 </div>
@@ -342,9 +346,12 @@
                         </a>
                     </h1>
                     <div v-if="showItemDetailsMeta" class="text-muted">
-                        <div>
-                            <span class="cursor-pointer" @click="feedSelected = 'feed:'+(feedsById[itemSelectedDetails.feed_id] || {}).id">
-                                {{ (feedsById[itemSelectedDetails.feed_id] || {}).title }}
+                        <div class="content-attribution">
+                            <span class="content-source-name cursor-pointer" @click="feedSelected = 'feed:'+(feedsById[itemSelectedDetails.feed_id] || {}).id">
+                                {{ itemAttribution(itemSelectedDetails, true).source }}
+                            </span>
+                            <span v-if="itemAttribution(itemSelectedDetails, true).author" class="content-author" :aria-label="'作者：' + itemAttribution(itemSelectedDetails, true).author">
+                                <span class="icon author-icon" title="作者" aria-hidden="true">{% inline "user.svg" %}</span><span class="content-author-name">{{ itemAttribution(itemSelectedDetails, true).author }}</span>
                             </span>
                         </div>
                         <time>{{ formatDate(itemSelectedDetails.date) }}</time>

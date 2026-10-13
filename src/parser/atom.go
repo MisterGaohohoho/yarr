@@ -10,6 +10,7 @@ import (
 )
 
 type atomFeed struct {
+	Authors []xmlAuthor `xml:"http://www.w3.org/2005/Atom author"`
 	XMLName xml.Name    `xml:"http://www.w3.org/2005/Atom feed"`
 	ID      string      `xml:"id"`
 	Title   atomText    `xml:"title"`
@@ -18,14 +19,15 @@ type atomFeed struct {
 }
 
 type atomEntry struct {
-	ID        string    `xml:"id"`
-	Title     atomText  `xml:"title"`
-	Summary   atomText  `xml:"summary"`
-	Published string    `xml:"published"`
-	Updated   string    `xml:"updated"`
-	Links     atomLinks `xml:"link"`
-	Content   atomText  `xml:"http://www.w3.org/2005/Atom content"`
-	OrigLink  string    `xml:"http://rssnamespace.org/feedburner/ext/1.0 origLink"`
+	Authors   []xmlAuthor `xml:"http://www.w3.org/2005/Atom author"`
+	ID        string      `xml:"id"`
+	Title     atomText    `xml:"title"`
+	Summary   atomText    `xml:"summary"`
+	Published string      `xml:"published"`
+	Updated   string      `xml:"updated"`
+	Links     atomLinks   `xml:"link"`
+	Content   atomText    `xml:"http://www.w3.org/2005/Atom content"`
+	OrigLink  string      `xml:"http://rssnamespace.org/feedburner/ext/1.0 origLink"`
 
 	media
 }
@@ -97,6 +99,7 @@ func ParseAtom(r io.Reader) (*Feed, error) {
 			Date:       dateParse(firstNonEmpty(srcitem.Published, srcitem.Updated)),
 			URL:        link,
 			Title:      srcitem.Title.Text(),
+			Author:     firstAuthor(srcitem.Authors, srcfeed.Authors),
 			Content:    firstNonEmpty(srcitem.Content.String(), srcitem.Summary.String(), srcitem.firstMediaDescription()),
 			MediaLinks: mediaLinks,
 		})
