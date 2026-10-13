@@ -4,46 +4,124 @@
     <meta charset="UTF-8">
     <title>yarr!</title>
     <link href="https://fontsapi.zeoseven.com/292/main/result.css" onload="this.rel='stylesheet'" rel="preload" as="style" crossorigin>
-    <link href="https://fontsapi.zeoseven.com/442/main/result.css" onload="this.rel='stylesheet'" rel="preload" as="style" crossorigin>
-    <noscript>
-        <link rel="stylesheet" href="https://fontsapi.zeoseven.com/292/main/result.css">
-        <link rel="stylesheet" href="https://fontsapi.zeoseven.com/442/main/result.css">
-    </noscript>
+    <noscript><link rel="stylesheet" href="https://fontsapi.zeoseven.com/292/main/result.css"></noscript>
     <link rel="stylesheet" href="./static/stylesheets/bootstrap.min.css?v={% assetVersion %}">
     <link rel="stylesheet" href="./static/stylesheets/app.css?v={% assetVersion %}">
     <link rel="icon" href="./static/graphicarts/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="./static/graphicarts/favicon.png" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <style>
-        form {
-            max-width: 300px;
-            margin: 0 auto;
-            padding: 1rem;
+        html, body {
+            height: 100%;
+            margin: 0;
         }
-        form img {
-            width: 4rem;
-            height: 4rem;
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 22rem;
+            padding: 2rem 2rem 1.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--border, rgba(0,0,0,.1));
+            background: var(--surface, #fff);
+            box-shadow: 0 4px 24px rgba(0,0,0,.08);
+        }
+        .login-logo {
             display: block;
-            margin: 3rem auto;
+            width: 2rem;
+            height: 2rem;
+            margin: 0 auto 1.5rem;
+            color: var(--accent-color, #2b6b4a);
+            opacity: .85;
+        }
+        .login-logo > svg {
+            width: 2rem;
+            height: 2rem;
+        }
+        .login-error {
+            font-size: .85rem;
+            text-align: center;
+            color: #c0392b;
+            margin-bottom: .75rem;
+        }
+        .login-group {
+            margin-bottom: .9rem;
+        }
+        .login-label {
+            display: block;
+            font-size: .75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .35rem;
+            opacity: .55;
+        }
+        .login-input {
+            display: block;
+            width: 100%;
+            height: 2.4rem;
+            padding: .5rem .65rem;
+            font-size: .9rem;
+            font-family: inherit;
+            border-radius: 5px;
+            border: 1px solid var(--border-strong, rgba(0,0,0,.15));
+            background: transparent;
+            color: inherit;
+            box-sizing: border-box;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .login-input:focus {
+            outline: none;
+            border-color: var(--accent-color, #2b6b4a);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color, #2b6b4a) 14%, transparent);
+        }
+        .login-submit {
+            display: block;
+            width: 100%;
+            height: 2.4rem;
+            margin-top: 1.1rem;
+            border-radius: 5px;
+            border: none;
+            background: var(--accent-color, #2b6b4a);
+            color: var(--accent-contrast-color, #fff);
+            font-size: .9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity .1s ease;
+        }
+        .login-submit:hover { opacity: .88; }
+        .login-submit:active { opacity: .72; }
+        .login-submit:focus-visible {
+            outline: 2px solid var(--accent-color, #2b6b4a);
+            outline-offset: 2px;
         }
     </style>
 </head>
 <body class="theme-light font-lxgw-wenkai">
-    <form action="" method="post">
-        <img src="./static/graphicarts/anchor.svg" alt="">
+    <form class="login-card" action="" method="post" novalidate>
+        <span class="login-logo icon">{% inline "anchor.svg" %}</span>
         {% if .error %}
-            <div class="text-danger text-center my-3">{% .error %}</div>
+            <div class="login-error" role="alert">{% .error %}</div>
         {% end %}
-        <div class="form-group">
-            <label for="username">用户名</label>
-            <input name="username" class="form-control" id="username" autocomplete="off"
-                   value="{% if .username %}{% .username %}{% end %}" required autofocus>
+        <div class="login-group">
+            <label class="login-label" for="username">用户名</label>
+            <input class="login-input" name="username" id="username"
+                   type="text" autocomplete="username" required autofocus
+                   value="{% if .username %}{% .username %}{% end %}">
         </div>
-        <div class="form-group">
-            <label for="password">密码</label>
-            <input name="password" class="form-control" id="password" type="password" required>
+        <div class="login-group">
+            <label class="login-label" for="password">密码</label>
+            <input class="login-input" name="password" id="password"
+                   type="password" autocomplete="current-password" required>
         </div>
-        <button class="btn btn-block btn-default" type="submit">登录</button>
+        <button class="login-submit" type="submit">登录</button>
     </form>
 </body>
 </html>
