@@ -301,6 +301,17 @@ select.form-control:not([multiple]):not([size]) {
   flex-shrink: 0;
 }
 
+.item-author,
+.content-author {
+  background-color: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  border-radius: .25rem;
+  padding: .1rem .3rem;
+}
+
+#item-list-scroll input:checked + .selectgroup-label .item-author {
+  background-color: color-mix(in srgb, var(--accent-contrast-color) 15%, transparent);
+}
+
 .content-attribution {
   display: flex;
   align-items: center;

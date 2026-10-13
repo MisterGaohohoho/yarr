@@ -189,9 +189,9 @@ func videoItem(v video, bvid, author string) rssItem {
 	}
 	item := rssItem{Title: v.Title, Link: link, GUID: guid{"false", aid}, PubDate: time.Unix(v.Pubdate, 0).UTC().Format(time.RFC1123Z), Author: author}
 	cover := coverURL(v.Pic)
-	body := ""
+	body := `<iframe src="` + html.EscapeString("https://player.bilibili.com/player.html?"+player.Encode()) + `"></iframe>`
 	if cover != "" {
-		body = `<p><img src="` + html.EscapeString(cover) + `" alt="` + html.EscapeString(v.Title) + `"></p>`
+		body += `<p><img src="` + html.EscapeString(cover) + `" alt="` + html.EscapeString(v.Title) + `"></p>`
 		contentType := "image/jpeg"
 		switch strings.ToLower(path.Ext(strings.SplitN(cover, "?", 2)[0])) {
 		case ".png":
@@ -206,7 +206,6 @@ func videoItem(v video, bvid, author string) rssItem {
 		item.Enclosure = &enclosure{URL: cover, Type: contentType}
 	}
 	body += `<p>` + strings.ReplaceAll(html.EscapeString(v.Description), "\n", "<br>\n") + `</p>`
-	body += `<iframe src="` + html.EscapeString("https://player.bilibili.com/player.html?"+player.Encode()) + `"></iframe>`
 	body += `<p><a href="` + html.EscapeString(link) + `">打开原视频</a></p>`
 	item.Description = sanitizer.Sanitize(link, body)
 	return item

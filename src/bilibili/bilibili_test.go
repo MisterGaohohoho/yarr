@@ -128,6 +128,10 @@ func TestRSSAndFreshCacheAtNight(t *testing.T) {
 			t.Errorf("missing %s: %s", want, item.Description)
 		}
 	}
+	playerAt, coverAt, introAt := strings.Index(item.Description, "<iframe "), strings.Index(item.Description, "<img "), strings.Index(item.Description, "intro ")
+	if playerAt < 0 || coverAt <= playerAt || introAt <= coverAt {
+		t.Fatalf("expected player, cover, then introduction: %s", item.Description)
+	}
 	if strings.Contains(item.Description, "<script>") || strings.Contains(string(got.Body), "private-test-cookie") {
 		t.Fatal("unsafe RSS")
 	}
