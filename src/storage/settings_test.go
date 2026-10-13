@@ -1,6 +1,76 @@
 package storage
 
-import "testing"
+import (
+	"math"
+	"path/filepath"
+	"testing"
+)
+
+func TestReadItemsKeepLimit(t *testing.T) {
+	db := testDB()
+	if got := db.GetSettingsValueInt64("read_items_keep_limit"); got != 1000 {
+		t.Fatalf("default limit = %d", got)
+	}
+	if got := db.GetSettings()["read_items_keep_limit"]; got != 1000 {
+		t.Fatalf("default setting = %#v", got)
+	}
+	for _, value := range []interface{}{1, int64(2000), float64(3000), float64(9007199254740991)} {
+		if !db.UpdateSettings(map[string]interface{}{"read_items_keep_limit": value}) {
+			t.Fatalf("valid limit rejected: %#v", value)
+		}
+	}
+	if !db.UpdateSettings(map[string]interface{}{"read_items_keep_limit": 2000}) {
+		t.Fatal("save failed")
+	}
+	for _, value := range []interface{}{nil, "", "1000", 0, -1, 1.5, true, math.NaN(), math.Inf(1), int64(9007199254740992)} {
+		if db.UpdateSettings(map[string]interface{}{"read_items_keep_limit": value, "backup_enabled": true}) {
+			t.Fatalf("invalid limit accepted: %#v", value)
+		}
+		if got := db.GetSettingsValueInt64("read_items_keep_limit"); got != 2000 || db.GetSettingsValueBool("backup_enabled") {
+			t.Fatalf("invalid request changed settings: %d", got)
+		}
+	}
+}
+
+func TestReadItemsKeepLimitCorruptSetting(t *testing.T) {
+	db := testDB()
+	for _, value := range []string{"", "invalid JSON", "null", "0", "-1", "1.5", `"1000"`, "true", "9007199254740992"} {
+		setRawSetting(t, db, "read_items_keep_limit", value)
+		if got := db.GetSettingsValueInt64("read_items_keep_limit"); got != 1000 {
+			t.Fatalf("%q: effective limit = %d", value, got)
+		}
+		if got := db.GetSettings()["read_items_keep_limit"]; got != 1000 {
+			t.Fatalf("%q: public setting = %#v", value, got)
+		}
+	}
+}
+
+func TestReadItemsKeepLimitPersistsAndBacksUp(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "storage.db")
+	db, err := New(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !db.UpdateSettings(map[string]interface{}{"read_items_keep_limit": 2500}) {
+		t.Fatal("save failed")
+	}
+	backupPath := filepath.Join(dir, "backup.db")
+	if err := db.BackupTo(backupPath); err != nil {
+		t.Fatal(err)
+	}
+	db.db.Close()
+	for _, path := range []string{path, backupPath} {
+		db, err := New(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := db.GetSettingsValueInt64("read_items_keep_limit"); got != 2500 {
+			t.Fatalf("%s: persisted limit = %d", path, got)
+		}
+		db.db.Close()
+	}
+}
 
 func setRawSetting(t *testing.T, db *Storage, key string, val string) {
 	t.Helper()

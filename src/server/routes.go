@@ -694,6 +694,9 @@ func (s *Server) handleSettings(c *router.Context) {
 			if _, ok := settings["backup_enabled"]; ok && s.db.GetSettingsValueBool("backup_enabled") {
 				s.startBackupScheduler()
 			}
+			if _, ok := settings["read_items_keep_limit"]; ok {
+				s.db.DeleteOldItems()
+			}
 			c.Out.WriteHeader(http.StatusOK)
 		} else {
 			c.Out.WriteHeader(http.StatusBadRequest)

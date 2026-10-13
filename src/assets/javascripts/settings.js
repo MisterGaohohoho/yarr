@@ -259,6 +259,28 @@ var settingsMixin = {
         return api.settings.update(payload).then(requireSettingResponse)
       }, function() { this[property] = value }.bind(this))
     },
+    saveReadItemsKeepLimit: function() {
+      var value = Number(this.readItemsKeepLimitDraft)
+      if (!Number.isSafeInteger(value) || value < 1) {
+        this.notifySettings('请输入大于 0 的整数。')
+        return Promise.resolve(false)
+      }
+      return this.runSettingsAction('read_items_keep_limit', function() {
+        return api.settings.update({read_items_keep_limit: value}).then(requireSettingResponse)
+      }, function() {
+        this.readItemsKeepLimit = value
+        this.readItemsKeepLimitDraft = value
+        var selected = this.itemSelected
+        var selection = selected === null ? Promise.resolve() : fetch('./api/items/' + selected).then(function(response) {
+          if (response.status === 404) {
+            if (this.itemSelected === selected) this.itemSelected = null
+          } else if (!response.ok) {
+            throw new Error('上限已保存，刷新文章状态失败，请刷新页面。')
+          }
+        }.bind(this))
+        return Promise.all([this.refreshStats(), this.refreshItems(false), selection])
+      }.bind(this))
+    },
     saveFeedSetting: function(feed, field, value) {
       var payload = {}
       payload[field] = value

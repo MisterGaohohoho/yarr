@@ -616,16 +616,13 @@ func (s *Storage) SyncSearch() {
 	}
 }
 
-var (
-	readItemsKeepSize = 500
-)
-
 // Delete old articles from the database to cleanup space.
 //
 // The rules:
 //   - Never delete unread or favorite entries.
-//   - Keep up to 500 read entries for each feed.
+//   - Keep up to the configured number of read entries for each feed.
 func (s *Storage) DeleteOldItems() {
+	keepLimit := s.GetSettingsValueInt64("read_items_keep_limit")
 	rows, err := s.db.Query(`
 		select
 			i.feed_id,
@@ -634,7 +631,7 @@ func (s *Storage) DeleteOldItems() {
 			where status = ? and not favorite
 		group by i.feed_id
 		having num_items > ?
-	`, READ, readItemsKeepSize)
+	`, READ, keepLimit)
 	if err != nil {
 		log.Print(err)
 		return
@@ -643,9 +640,19 @@ func (s *Storage) DeleteOldItems() {
 	feedIDs := make([]int64, 0)
 	for rows.Next() {
 		var feedId, numItems int64
-		rows.Scan(&feedId, &numItems)
+		if err := rows.Scan(&feedId, &numItems); err != nil {
+			rows.Close()
+			log.Print(err)
+			return
+		}
 		feedIDs = append(feedIDs, feedId)
 	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		log.Print(err)
+		return
+	}
+	rows.Close()
 
 	for _, feedId := range feedIDs {
 		result, err := s.db.Exec(`
@@ -654,13 +661,13 @@ func (s *Storage) DeleteOldItems() {
 				select i.id
 				from items i
 					where i.feed_id = ? and status = ? and not favorite
-				order by date desc
+				order by date desc, id desc
 				limit -1 offset ?
 			)
 			`,
 			feedId,
 			READ,
-			readItemsKeepSize,
+			keepLimit,
 		)
 		if err != nil {
 			log.Print(err)

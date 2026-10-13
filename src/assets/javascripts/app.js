@@ -152,8 +152,10 @@ Vue.directive('focus', {
   }
 })
 
+var MOBILE_LAYOUT_QUERY = '(max-width: 767.98px)'
+
 function isMobileLayout() {
-  return window.matchMedia && window.matchMedia('(max-width: 767.98px)').matches
+  return window.matchMedia && window.matchMedia(MOBILE_LAYOUT_QUERY).matches
 }
 
 function isDesktopLayout() {
@@ -426,6 +428,8 @@ var vm = new Vue({
     this.updateBodyClass()
   },
   mounted: function() {
+    this._mobileLayoutQuery = window.matchMedia && window.matchMedia(MOBILE_LAYOUT_QUERY)
+    if (this._mobileLayoutQuery) this._mobileLayoutQuery.addEventListener('change', this.updateMobileLayout)
     if (!app.settings.feed_list_width || !app.settings.item_list_width) {
       this.resetColumnWidths()
     }
@@ -436,6 +440,7 @@ var vm = new Vue({
   },
   beforeDestroy: function() {
     clearTimeout(this.statusPollTimeout)
+    if (this._mobileLayoutQuery) this._mobileLayoutQuery.removeEventListener('change', this.updateMobileLayout)
     if (this.$refs.itemlist) {
       this.$refs.itemlist.removeEventListener('scroll', this.handleItemListScroll)
     }
@@ -448,6 +453,7 @@ var vm = new Vue({
       'folders': [],
       'feeds': [],
       'feedSelected': feedSelected,
+      'mobileLayout': !!isMobileLayout(),
       'feedListWidth': s.feed_list_width || 300,
       'feedSort': normalizeFeedSort(s.feed_sort),
       'feedSortOptions': FEED_SORT_OPTIONS,
@@ -504,6 +510,8 @@ var vm = new Vue({
         'light': '#f5f6f6',
       },
       'refreshRate': s.refresh_rate,
+      'readItemsKeepLimit': s.read_items_keep_limit,
+      'readItemsKeepLimitDraft': s.read_items_keep_limit,
       'backupEnabled': !!s.backup_enabled,
       'toolbarDisplay': readLocalSetting(TOOLBAR_DISPLAY_KEY, s.toolbar_display, normalizeToolbarDisplay),
       'fontOptions': FONT_OPTIONS,
@@ -758,12 +766,15 @@ var vm = new Vue({
     },
   },
   methods: {
+    updateMobileLayout: function(event) {
+      this.mobileLayout = event.matches
+    },
     itemAttribution: function(item, detail) {
       item = item || {}
       var source = String((this.feedsById[item.feed_id] || {}).title || '').trim()
       var author = String(item.author || '').trim()
       if (!detail && author) {
-        if (this.current.type === 'feed') source = ''
+        if (this.current.type === 'feed' && !this.mobileLayout) source = ''
         else if (source) {
           var sourceCompare = source.toLowerCase()
           var authorCompare = author.toLowerCase()

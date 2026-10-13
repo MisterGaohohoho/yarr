@@ -527,10 +527,11 @@ func TestDeleteOldItems(t *testing.T) {
 
 	now := time.Now().UTC()
 	db := testDB()
+	keepLimit := int(db.GetSettingsValueInt64("read_items_keep_limit"))
 	feed := db.CreateFeed("feed", "", "", "http://test.com/feed11.xml", nil)
 
 	items := make([]Item, 0)
-	for i := 0; i < readItemsKeepSize+extraItems; i++ {
+	for i := 0; i < keepLimit+extraItems; i++ {
 		istr := strconv.Itoa(i)
 		items = append(items, Item{
 			GUID:   istr,
@@ -540,8 +541,8 @@ func TestDeleteOldItems(t *testing.T) {
 		})
 	}
 	items = append(items,
-		Item{GUID: "unread", FeedId: feed.Id, Title: "unread", Date: now.Add(time.Hour * time.Duration(readItemsKeepSize+extraItems+1))},
-		Item{GUID: "favorite", FeedId: feed.Id, Title: "favorite", Date: now.Add(time.Hour * time.Duration(readItemsKeepSize+extraItems+2))},
+		Item{GUID: "unread", FeedId: feed.Id, Title: "unread", Date: now.Add(time.Hour * time.Duration(keepLimit+extraItems+1))},
+		Item{GUID: "favorite", FeedId: feed.Id, Title: "favorite", Date: now.Add(time.Hour * time.Duration(keepLimit+extraItems+2))},
 	)
 	db.CreateItems(items)
 	_, err := db.db.Exec(`update items set status = ?, favorite = true where guid = 'favorite'`, READ)
@@ -554,11 +555,11 @@ func TestDeleteOldItems(t *testing.T) {
 	}
 
 	db.DeleteOldItems()
-	feedItems := db.ListItems(ItemFilter{FeedID: &feed.Id}, 1000, false, false)
-	if len(feedItems) != readItemsKeepSize+2 {
+	feedItems := db.ListItems(ItemFilter{FeedID: &feed.Id}, keepLimit+extraItems+2, false, false)
+	if len(feedItems) != keepLimit+2 {
 		t.Fatalf(
 			"invalid number of old items kept\nwant: %d\nhave: %d",
-			readItemsKeepSize+2,
+			keepLimit+2,
 			len(feedItems),
 		)
 	}

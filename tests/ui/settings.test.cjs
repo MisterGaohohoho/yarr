@@ -479,6 +479,7 @@ test('Bilibili Cookie settings save without revealing or retaining the credentia
 })
 
 test('article authors follow source scope and stay visible in details', async () => {
+  await api('/api/feeds/' + feeds[0].id, 'PUT', {title: 'first source'})
   const p = await page()
   const articles = (await (await api('/api/items?feed_id=' + feeds[0].id)).json()).list
   const byIndex = index => articles.find(item => item.guid === 'first-' + index)
@@ -550,6 +551,8 @@ test('long article authors truncate in lists and wrap in details on phones', asy
   await p.waitForFunction(id => !vm.loading.items && vm.items.some(item => item.id === id), long.id)
   for (const width of [1440, 390, 320]) {
     await p.setViewportSize({width, height: 900})
+    await p.evaluate(({width, id}) => { vm.feedSelected = width < 768 ? 'feed:' + id : '' }, {width, id: feeds[0].id})
+    await p.waitForFunction(id => !vm.loading.items && vm.items.some(item => item.id === id), long.id)
     for (const theme of ['light', 'sepia', 'night']) for (const layout of ['list', 'card']) {
       await p.evaluate(({theme, layout}) => { vm.theme.name = theme; vm.articleListLayout = layout; return vm.$nextTick() }, {theme, layout})
       const label = p.locator(`.selectgroup[data-item-id="${long.id}"]`)
@@ -568,6 +571,99 @@ test('long article authors truncate in lists and wrap in details on phones', asy
   const detail = await p.locator('.content-attribution').evaluate(el => ({width: el.clientWidth, scroll: el.scrollWidth}))
   assert.ok(detail.scroll <= detail.width + 1, JSON.stringify(detail))
   await close(p)
+})
+
+test('mobile single-source authors include the source and react to viewport changes', async () => {
+  await api('/api/feeds/' + feeds[0].id, 'PUT', {title: 'first source'})
+  const p = await page()
+  const articles = (await (await api('/api/items?feed_id=' + feeds[0].id)).json()).list
+  const byIndex = index => articles.find(item => item.guid === 'first-' + index)
+  const row = index => p.locator(`.selectgroup[data-item-id="${byIndex(index).id}"]`)
+  await api('/api/items/' + byIndex(0).id, 'PUT', {status: 'unread', favorite: true})
+  await p.evaluate(id => { vm.feedSelected = 'feed:' + id; vm.itemSelected = null; return vm.$nextTick() }, feeds[0].id)
+  for (const width of [1440, 768, 767, 390, 768]) {
+    await p.setViewportSize({width, height: 900})
+    await p.waitForFunction(mobile => vm.mobileLayout === mobile, width < 768)
+    for (const layout of ['list', 'card']) for (const filter of ['', 'unread', 'favorite']) {
+      await p.evaluate(({layout, filter}) => { vm.articleListLayout = layout; vm.filterSelected = filter; return vm.$nextTick() }, {layout, filter})
+      await p.waitForFunction(id => !vm.loading.items && vm.items.some(item => item.id === id), byIndex(0).id)
+      assert.equal(await row(0).locator('.item-source-name').count(), width < 768 ? 1 : 0, JSON.stringify({width, layout, filter}))
+      assert.equal(await row(0).locator('.item-author-name').textContent(), 'Writer Name')
+      if (filter === '') {
+        assert.equal(await row(1).locator('.item-source-name').textContent(), 'first source')
+        for (const index of [2, 3, 4, 5]) {
+          assert.equal(await row(index).locator('.item-author').count(), width < 768 ? 0 : 1)
+          if (width < 768) assert.equal(await row(index).locator('.item-source-name').textContent(), 'first source')
+        }
+      }
+    }
+  }
+  await p.setViewportSize({width: 390, height: 900})
+  await row(0).locator('.selectgroup-label').click()
+  await p.waitForFunction(id => vm.itemSelectedDetails && vm.itemSelectedDetails.id === id, byIndex(0).id)
+  assert.equal((await p.locator('.content-source-name').textContent()).trim(), 'first source')
+  assert.equal(await p.locator('.content-author-name').textContent(), 'Writer Name')
+  await close(p)
+})
+
+test('read retention settings validate save persist and clear deleted selections', async () => {
+  await api('/api/settings', 'PUT', {read_items_keep_limit: 1000})
+  const result = await (await api('/api/feeds', 'POST', {url: fixtureBase + '/retention.xml'})).json()
+  const id = result.feed.id
+  const p = await page()
+  try {
+    await api('/api/feeds/' + id + '/refresh', 'POST')
+    await until(async () => (await (await api('/api/items?feed_id=' + id)).json()).list.length === 8)
+    await api('/api/items?feed_id=' + id, 'PUT')
+    const articles = (await (await api('/api/items?feed_id=' + id)).json()).list
+    const oldest = articles[articles.length - 1]
+    await p.evaluate(id => { vm.feedSelected = 'feed:' + id; vm.filterSelected = '' }, id)
+    await p.waitForFunction(() => !vm.loading.items && vm.items.length === 8)
+    await p.locator(`.selectgroup[data-item-id="${oldest.id}"] .selectgroup-label`).click()
+    await p.waitForFunction(id => vm.itemSelectedDetails && vm.itemSelectedDetails.id === id, oldest.id)
+    await system(p)
+    const input = p.getByLabel('每个订阅源已读保留上限', {exact: true})
+    const save = input.locator('xpath=../..').getByRole('button', {name: '保存', exact: true})
+    assert.equal(await input.inputValue(), '1000')
+    let writes = 0
+    p.on('request', request => { if (request.url().endsWith('/api/settings') && request.method() === 'PUT') writes++ })
+    for (const value of ['', '0', '-1', '1.5', '9007199254740992']) {
+      await input.fill(value)
+      await save.click()
+      assert.ok((await p.locator('.settings-notice').textContent()).includes('大于 0'))
+      assert.equal(writes, 0)
+    }
+    await input.fill('2')
+    await p.route('**/api/settings', route => route.request().method() === 'PUT' ? route.fulfill({status: 503}) : route.continue())
+    await save.click()
+    await p.waitForFunction(() => !vm.settingsPending.read_items_keep_limit)
+    assert.ok((await p.locator('.settings-notice').textContent()).includes('保存失败'))
+    assert.equal(await p.evaluate(() => vm.readItemsKeepLimit), 1000)
+    assert.equal(await input.inputValue(), '2')
+    assert.equal((await (await api('/api/items?feed_id=' + id)).json()).list.length, 8)
+    await p.unroute('**/api/settings')
+    await save.click()
+    await p.waitForFunction(() => vm.readItemsKeepLimit === 2 && !vm.settingsPending.read_items_keep_limit && vm.itemSelected === null && vm.items.length === 2)
+    assert.equal(await p.locator('.content-author').count(), 0)
+    assert.equal((await (await api('/api/settings')).json()).read_items_keep_limit, 2)
+    await p.reload()
+    await p.waitForFunction(() => window.vm && !vm.loading.items && vm.feeds.length >= 3)
+    await system(p)
+    assert.equal(await input.inputValue(), '2')
+    for (const width of [390, 320]) {
+      await p.setViewportSize({width, height: 900})
+      const sizes = await p.locator('.settings-workspace').evaluate(el => ({width: el.clientWidth, scroll: el.scrollWidth, body: document.body.scrollWidth, viewport: window.innerWidth}))
+      assert.ok(sizes.scroll <= sizes.width + 1 && sizes.body <= sizes.viewport + 1, JSON.stringify(sizes))
+    }
+    await input.fill('4')
+    await save.click()
+    await p.waitForFunction(() => vm.readItemsKeepLimit === 4 && !vm.settingsPending.read_items_keep_limit)
+    assert.equal((await (await api('/api/items?feed_id=' + id)).json()).list.length, 2)
+  } finally {
+    await api('/api/settings', 'PUT', {read_items_keep_limit: 1000})
+    await api('/api/feeds/' + id, 'DELETE')
+    await close(p)
+  }
 })
 
 test('open source settings follow feed folder and all-source selections', async () => {

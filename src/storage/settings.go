@@ -4,22 +4,44 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"math"
 
 	"github.com/nkanaev/yarr/src/rsshub"
 )
 
+const defaultReadItemsKeepLimit = 1000
+
+func readItemsKeepLimit(value interface{}) (int64, bool) {
+	var number float64
+	switch value := value.(type) {
+	case int:
+		number = float64(value)
+	case int64:
+		number = float64(value)
+	case float64:
+		number = value
+	default:
+		return 0, false
+	}
+	if number >= 1 && number <= 9007199254740991 && math.Trunc(number) == number {
+		return int64(number), true
+	}
+	return 0, false
+}
+
 func settingsDefaults() map[string]interface{} {
 	return map[string]interface{}{
-		"filter":            "",
-		"feed_list_width":   0,
-		"feed_sort":         "time",
-		"item_list_width":   0,
-		"refresh_rate":      0,
-		"rsshub_base_url":   "",
-		"backup_enabled":    false,
-		"auto_read_scroll":  false,
-		"unread_first":      true,
-		"sort_newest_first": true,
+		"filter":                "",
+		"feed_list_width":       0,
+		"feed_sort":             "time",
+		"item_list_width":       0,
+		"refresh_rate":          0,
+		"rsshub_base_url":       "",
+		"backup_enabled":        false,
+		"auto_read_scroll":      false,
+		"unread_first":          true,
+		"sort_newest_first":     true,
+		"read_items_keep_limit": defaultReadItemsKeepLimit,
 	}
 }
 
@@ -48,6 +70,12 @@ func (s *Storage) GetSettingsValue(key string) interface{} {
 
 func (s *Storage) GetSettingsValueInt64(key string) int64 {
 	val := s.GetSettingsValue(key)
+	if key == "read_items_keep_limit" {
+		if limit, ok := readItemsKeepLimit(val); ok {
+			return limit
+		}
+		return defaultReadItemsKeepLimit
+	}
 	if val != nil {
 		if fval, ok := val.(float64); ok {
 			return int64(fval)
@@ -96,12 +124,24 @@ func (s *Storage) GetSettings() map[string]interface{} {
 			log.Print(err)
 			continue
 		}
+		if key == "read_items_keep_limit" {
+			limit, ok := readItemsKeepLimit(valDecoded)
+			if !ok {
+				continue
+			}
+			valDecoded = limit
+		}
 		result[key] = valDecoded
 	}
 	return result
 }
 
 func (s *Storage) UpdateSettings(kv map[string]interface{}) bool {
+	if value, exists := kv["read_items_keep_limit"]; exists {
+		if _, ok := readItemsKeepLimit(value); !ok {
+			return false
+		}
+	}
 	defaults := settingsDefaults()
 	for key, val := range kv {
 		if defaults[key] == nil {

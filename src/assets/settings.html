@@ -45,6 +45,13 @@
                             <button class="btn btn-link" :disabled="settingsPending.feed_sort" :aria-pressed="feedSort == option.name" :class="{active: feedSort == option.name}" @click="saveGlobalSetting('feedSort', 'feed_sort', option.name)" v-for="option in feedSortOptions">{{ option.title }}</button>
                         </div>
                     </div>
+                    <div class="settings-row"><label for="settings-read-items-keep-limit">每个订阅源已读保留上限</label>
+                        <div class="settings-number-control">
+                            <input id="settings-read-items-keep-limit" class="form-control settings-number" type="number" min="1" max="9007199254740991" step="1" v-model="readItemsKeepLimitDraft" :disabled="settingsPending.read_items_keep_limit" aria-describedby="settings-read-items-keep-limit-help" @keydown.enter.stop.prevent="saveReadItemsKeepLimit()">
+                            <button class="btn btn-default flex-shrink-0" :disabled="settingsPending.read_items_keep_limit" @click="saveReadItemsKeepLimit()">{{ settingsPending.read_items_keep_limit ? '保存中' : '保存' }}</button>
+                        </div>
+                    </div>
+                    <small id="settings-read-items-keep-limit-help" class="d-block text-muted mt-1">仅限制已读、未收藏文章，未读与收藏不计入上限。保存后清理超出的旧文章，并在启动时及每日清理。</small>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
                         <button class="settings-dialog-action" @click="showSettings('shortcuts')"><span class="icon mr-2">{% inline "help-circle.svg" %}</span>快捷键<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                     </div>
