@@ -95,6 +95,10 @@
         return api('put', './api/settings', data)
       },
     },
+    bilibili: {
+      get: function() { return api('get', './api/bilibili').then(json) },
+      update: function(cookie) { return api('put', './api/bilibili', {cookie: cookie}) },
+    },
     auth: {
       get: function() {
         return api('get', './api/auth').then(json)

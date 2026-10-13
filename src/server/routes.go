@@ -41,6 +41,8 @@ func (s *Server) handler() http.Handler {
 	r.For("/manifest.json", s.handleManifest)
 	r.For("/static/*path", s.handleStatic)
 	r.For("/rss/discord/channel/:channelId/:token", s.handleDiscordRSS)
+	r.For("/rss/bilibili/:uid", s.handleBilibiliRSS)
+	r.For("/api/bilibili", s.handleBilibiliConfig)
 	r.For("/api/status", s.handleStatus)
 	r.For("/api/auth", s.handleAuth)
 	r.For("/api/folders", s.handleFolderList)

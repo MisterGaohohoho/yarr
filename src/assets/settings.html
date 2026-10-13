@@ -77,6 +77,7 @@
                     <div class="settings-row"><label for="settings-backup">自动备份</label><input id="settings-backup" type="checkbox" :checked="backupEnabled" :disabled="settingsPending.backup_enabled" @change="saveGlobalSetting('backupEnabled', 'backup_enabled', $event.target.checked)"></div>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
                         <button class="settings-dialog-action" :disabled="loading.backup" @click="backupData()"><span class="icon mr-2">{% inline "download.svg" %}</span>备份数据</button>
+                        <button class="settings-dialog-action" @click="showSettings('bilibili')"><span class="icon mr-2">{% inline "rss.svg" %}</span>Bilibili 关注视频<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                         <button class="settings-dialog-action" @click="showSettings('auth')"><span class="icon mr-2">{% inline "sliders.svg" %}</span>访问认证<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                         <button class="settings-dialog-action" v-if="authenticated" @click="logout()"><span class="icon mr-2">{% inline "log-out.svg" %}</span>退出登录</button>
                     </div>
@@ -307,6 +308,17 @@
                         删除
                     </button>
                 </div>
+            </div>
+            <div v-else-if="settings=='bilibili'">
+                <p>读取登录账号关注的视频动态。订阅链接为 <code>/rss/bilibili/你的UID</code>，UID 必须与 Cookie 登录账号一致。</p>
+                <p aria-live="polite">Cookie：{{ settingsPending['bilibili-load'] ? '正在读取配置状态…' : bilibiliConfigured ? '已配置' : '未配置' }}</p>
+                <form @submit.prevent="updateBilibiliConfig(false)">
+                    <label for="bilibili-cookie">Bilibili Cookie</label>
+                    <textarea id="bilibili-cookie" class="textarea form-control" rows="6" autocomplete="off" autocapitalize="off" spellcheck="false" v-model="bilibiliCookieDraft" placeholder="粘贴完整 Cookie，保存后不回显" v-focus></textarea>
+                    <p class="mt-3">Cookie 随数据库备份保存。替换或清空后，旧内容缓存会失效。</p>
+                    <button class="btn btn-default mt-3" :disabled="settingsPending.bilibili || settingsPending['bilibili-load'] || !bilibiliCookieDraft.trim()" type="submit">保存</button>
+                    <button class="btn btn-link mt-3" :disabled="settingsPending.bilibili || settingsPending['bilibili-load'] || !bilibiliConfigured" type="button" @click="updateBilibiliConfig(true)">清空 Cookie</button>
+                </form>
             </div>
             <div v-else-if="settings=='auth'">
 

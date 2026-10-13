@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/nkanaev/yarr/src/bilibili"
 	"github.com/nkanaev/yarr/src/discord"
 	"github.com/nkanaev/yarr/src/storage"
 	"github.com/nkanaev/yarr/src/worker"
@@ -20,6 +21,7 @@ type Server struct {
 	worker      *worker.Worker
 	backups     *BackupService
 	discord     *discord.Service
+	bilibili    *bilibili.Service
 	backupsOnce sync.Once
 	cache       map[string]interface{}
 	cache_mutex *sync.Mutex
@@ -41,6 +43,10 @@ func NewServer(db *storage.Storage, addr string) *Server {
 	}
 	if db != nil {
 		var err error
+		s.bilibili, err = bilibili.New(db)
+		if err != nil {
+			log.Print("Failed to initialize Bilibili RSS cache")
+		}
 		s.discord, err = discord.New(db)
 		if err != nil {
 			log.Print("Failed to initialize Discord RSS cache")
@@ -62,6 +68,11 @@ func (h *Server) GetAddr() string {
 }
 
 func (s *Server) Start() {
+	if s.bilibili != nil {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go s.bilibili.Cleanup(ctx)
+	}
 	if s.discord != nil {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()

@@ -24,6 +24,8 @@ var settingsMixin = {
         password: '',
       },
 
+      bilibiliConfigured: false,
+      bilibiliCookieDraft: '',
       settings: '',
       settingsFeed: null,
       settingsFolder: null,
@@ -41,6 +43,11 @@ var settingsMixin = {
       settingsClosing: false,
       settingsAuthLoaded: false,
     }
+  },
+  watch: {
+    settings: function(value, oldValue) {
+      if (oldValue === 'bilibili' && value !== 'bilibili') this.bilibiliCookieDraft = ''
+    },
   },
   computed: {
     feedDeleteGroups: function() {
@@ -75,7 +82,7 @@ var settingsMixin = {
       if (this.settings === 'feed') return this.settingsFeed ? this.settingsFeed.title : '订阅源设置'
       if (this.settings === 'folder') return this.settingsFolder ? this.settingsFolder.title : '文件夹设置'
       return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源', auth: '访问认证',
-        rsshub: 'RSSHub 基础链接列表', rsshubdetails: 'RSSHub 刷新详情', shortcuts: '键盘快捷键'}[this.settings] || '设置'
+        bilibili: 'Bilibili 关注视频', rsshub: 'RSSHub 基础链接列表', rsshubdetails: 'RSSHub 刷新详情', shortcuts: '键盘快捷键'}[this.settings] || '设置'
     },
     settingsKey: function() {
       return this.settings + ':' + (this.settingsFeed ? this.settingsFeed.id : this.settingsFolder ? this.settingsFolder.id : '')
@@ -141,6 +148,7 @@ var settingsMixin = {
       }
       if (name === 'rsshub' && this.settingsRSSHubDraft === null) this.settingsRSSHubDraft = this.rsshubBaseUrl
       if (name === 'auth') this.loadAuthConfig()
+      if (name === 'bilibili') this.loadBilibiliConfig()
       if (name === 'rsshubdetails') this.refreshStats()
       this.pushSettingsHistory()
     },
@@ -166,6 +174,7 @@ var settingsMixin = {
       if (this.dialog.open) return this.cancelDialog()
       this.saveSettingsScroll()
       this.authForm.password = ''
+      this.bilibiliCookieDraft = ''
       if (this.hasSettingsHistory()) {
         this.settingsClosing = true
         this.settingsAfterClose = typeof afterClose === 'function' ? afterClose : null
@@ -178,6 +187,7 @@ var settingsMixin = {
     finishClosingSettings: function() {
       this.settingsClosing = false
       this.settings = ''
+      this.bilibiliCookieDraft = ''
       this.settingsFeed = null
       this.settingsFolder = null
       this.settingsStack = []
@@ -443,6 +453,22 @@ var settingsMixin = {
     },
     logout: function() {
       api.logout().then(function() { document.location.reload() })
+    },
+    loadBilibiliConfig: function() {
+      return this.runSettingsAction('bilibili-load', function() { return api.bilibili.get() }, function(config) {
+        this.bilibiliConfigured = config.configured
+      }.bind(this), '')
+    },
+    updateBilibiliConfig: function(clear) {
+      if (this.settingsPending.bilibili || this.settingsPending['bilibili-load']) return
+      var cookie = clear ? '' : this.bilibiliCookieDraft.trim()
+      if (!clear && !cookie) return this.notifySettings('请先粘贴 Bilibili Cookie。')
+      return this.runSettingsAction('bilibili', function() {
+        return api.bilibili.update(cookie).then(requireSettingResponse)
+      }, function() {
+        this.bilibiliConfigured = !!cookie
+        this.bilibiliCookieDraft = ''
+      }.bind(this), clear ? 'Cookie 已清空。' : 'Cookie 已保存。')
     },
     loadAuthConfig: function() {
       return this.runSettingsAction('auth-load', function() { return api.auth.get() }, function(config) {

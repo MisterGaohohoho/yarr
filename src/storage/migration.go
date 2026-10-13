@@ -34,6 +34,7 @@ var migrations = []func(*sql.Tx) error{
 	m24_add_favorite_and_item_order,
 	m25_add_feed_refresh_times,
 	m26_discord_cache,
+	m27_bilibili,
 }
 
 var maxVersion = int64(len(migrations))

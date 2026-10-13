@@ -20,6 +20,8 @@ func unsafeMethod(method string) bool {
 	return method == "POST" || method == "PUT" || method == "DELETE"
 }
 
+var bilibiliRSSPath = regexp.MustCompile(`^/rss/bilibili/[0-9]+$`)
+
 var discordRSSPath = regexp.MustCompile(`^/rss/discord/channel/[^/]+/[^/]+$`)
 
 func (m *Middleware) Handler(c *router.Context) {
@@ -28,7 +30,7 @@ func (m *Middleware) Handler(c *router.Context) {
 		c.Next()
 		return
 	}
-	if discordRSSPath.MatchString(strings.TrimPrefix(c.Req.URL.Path, m.BasePath)) {
+	if path := strings.TrimPrefix(c.Req.URL.Path, m.BasePath); discordRSSPath.MatchString(path) || bilibiliRSSPath.MatchString(path) {
 		c.Next()
 		return
 	}
