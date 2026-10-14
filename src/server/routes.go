@@ -83,6 +83,11 @@ func (s *Server) handleStatic(c *router.Context) {
 		c.Out.WriteHeader(http.StatusNotFound)
 		return
 	}
+	if assets.FromDisk() {
+		// debug builds edit assets in place under a fixed ?v=; force revalidation so
+		// freshly rendered templates never run against a stale cached script.
+		c.Out.Header().Set("Cache-Control", "no-cache")
+	}
 	http.StripPrefix(s.BasePath+"/static/", http.FileServer(http.FS(assets.FS))).ServeHTTP(c.Out, c.Req)
 }
 

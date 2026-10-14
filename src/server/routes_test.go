@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nkanaev/yarr/src/assets"
 	"github.com/nkanaev/yarr/src/server/opml"
 	"github.com/nkanaev/yarr/src/storage"
 )
@@ -1359,5 +1360,29 @@ func TestFeverFaviconsFallsBackForEmptyIconURL(t *testing.T) {
 	}
 	if result.Favicons[0].Data != feverBlankFavicon {
 		t.Fatalf("got %q", result.Favicons[0].Data)
+	}
+}
+
+func TestStaticCacheControlOnlyForDiskAssets(t *testing.T) {
+	handler := NewServer(nil, "127.0.0.1:8000").handler()
+	recorder := httptest.NewRecorder()
+	if assets.FromDisk() {
+		// debug assets are read relative to the repo root, like `make serve`
+		wd, _ := os.Getwd()
+		if err := os.Chdir("../.."); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { os.Chdir(wd) })
+	}
+	handler.ServeHTTP(recorder, httptest.NewRequest("GET", "/static/javascripts/app.js", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status %d", recorder.Code)
+	}
+	got := recorder.Result().Header.Get("Cache-Control")
+	if assets.FromDisk() && got != "no-cache" {
+		t.Fatalf("debug assets must revalidate, got Cache-Control %q", got)
+	}
+	if !assets.FromDisk() && got != "" {
+		t.Fatalf("embedded assets should keep default caching, got Cache-Control %q", got)
 	}
 }

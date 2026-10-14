@@ -22,6 +22,11 @@ func SetVersion(version string) {
 	assetVersion = version
 }
 
+// FromDisk reports whether assets are served from src/assets on disk (debug builds).
+func FromDisk() bool {
+	return FS.embedded == nil
+}
+
 func (afs assetsfs) Open(name string) (fs.File, error) {
 	if afs.embedded != nil {
 		return afs.embedded.Open(name)
