@@ -888,6 +888,20 @@ input[type="radio"] {
   outline-offset: 2px;
 }
 
+/* text fields: focus is shown by the border color only, no outer ring */
+#app .form-control:focus,
+#app .form-control:focus-visible,
+#app input[type="text"]:focus-visible,
+#app input[type="number"]:focus-visible,
+#app input[type="password"]:focus-visible,
+#app input[type="url"]:focus-visible,
+#app input[type="search"]:focus-visible,
+#app textarea:focus-visible {
+  outline: none;
+  box-shadow: none !important;
+  border-color: var(--accent-color) !important;
+}
+
 /* labels wrapping a hidden radio/file input: ring only for keyboard focus,
    not when the option is clicked with the mouse */
 .settings-workspace label:has(:focus-visible) {
