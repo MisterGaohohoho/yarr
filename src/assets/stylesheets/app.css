@@ -35,7 +35,8 @@ body {
   --pane-resize-handle-bg-hover: var(--accent-color);
   --pane-resize-handle-ring: rgba(247, 247, 246, 0.9);
   --item-list-separator-color: rgba(0, 0, 0, 0.07);
-  --article-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --article-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --article-card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.09);
   --action-button-border-color: rgba(0, 0, 0, 0.13);
   --action-button-hover-bg:    #f0f0ee;
   --action-button-shadow:      0 1px 2px rgba(0, 0, 0, 0.06);
@@ -188,6 +189,13 @@ select.form-control:not([multiple]):not([size]) {
 .settings-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
+}
+
+/* the auto-hidden scrollbar still occupies 6px on the right; mirror it on the
+   left so list rows sit equidistant from both pane dividers */
+#feed-list-scroll,
+#item-list-scroll {
+  scrollbar-gutter: stable both-edges;
 }
 
 #feed-list-scroll::-webkit-scrollbar-track,
@@ -494,14 +502,27 @@ select.form-control:not([multiple]):not([size]) {
   flex-direction: column;
   align-items: stretch !important;
   padding: 0;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--radius-md);
   box-shadow: var(--article-card-shadow);
   overflow: hidden;
+  transition: box-shadow .18s ease, transform .18s ease, background-color .1s ease;
+}
+
+.article-list-layout-card #item-list-scroll .selectgroup-label:hover {
+  box-shadow: var(--article-card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-list-layout-card #item-list-scroll .selectgroup-label,
+  .article-list-layout-card #item-list-scroll .selectgroup-label:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 .article-list-layout-card #item-list-scroll input:checked + .selectgroup-label {
-  border-color: var(--accent-color);
   background-color: var(--accent-color) !important;
 }
 
@@ -620,7 +641,7 @@ select.form-control:not([multiple]):not([size]) {
 .article-list-layout-card .item-list-skeleton-card {
   align-items: stretch;
   background: var(--skeleton-card-bg);
-  border: 1px solid var(--skeleton-card-border);
+  border: 0;
   border-radius: var(--radius-md);
   box-shadow: var(--article-card-shadow);
   flex-direction: column;
@@ -1429,7 +1450,8 @@ button.theme-light {
   --text-muted:                rgba(30, 30, 26, 0.5);
   --hover-bg:                  #ecece8;
   --active-bg:                 #e4e4de;
-  --article-card-shadow:       0 1px 3px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --article-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --article-card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.09);
   --action-button-border-color: rgba(0, 0, 0, 0.13);
   --action-button-hover-bg:    #ececea;
   --action-button-shadow:      0 1px 2px rgba(0, 0, 0, 0.06);
@@ -1476,8 +1498,7 @@ button.theme-light {
 }
 
 .theme-light .article-list-layout-card #item-list-scroll .selectgroup-label {
-  border-color: #e0e0da;
-  background-color: #fbfbf9;
+  background-color: #ffffff;
 }
 
 .theme-light .article-list-layout-card #item-list-scroll .selectgroup-label:hover {
@@ -1503,7 +1524,8 @@ button.theme-light {
   --text-muted:                rgba(60, 42, 18, 0.5);
   --hover-bg:                  #e8dcc0;
   --active-bg:                 #ddd2b0;
-  --article-card-shadow:       0 1px 3px rgba(80, 60, 20, 0.10), 0 0 0 1px rgba(80, 60, 20, 0.07);
+  --article-card-shadow: 0 1px 2px rgba(80, 60, 20, 0.07), 0 4px 12px rgba(80, 60, 20, 0.09);
+  --article-card-shadow-hover: 0 2px 4px rgba(80, 60, 20, 0.08), 0 8px 20px rgba(80, 60, 20, 0.13);
   --action-button-border-color: rgba(80, 60, 20, 0.18);
   --action-button-hover-bg:    #e8dcc0;
   --action-button-shadow:      0 1px 2px rgba(80, 60, 20, 0.10);
@@ -1562,7 +1584,6 @@ body.theme-sepia {
 }
 
 .theme-sepia .article-list-layout-card #item-list-scroll .selectgroup-label {
-  border-color: #d9c999;
   background-color: #f7edca;
 }
 
@@ -1593,7 +1614,8 @@ body.theme-sepia {
   --text-muted:                rgba(210, 210, 200, 0.45);
   --hover-bg:                  #2a2a2a;
   --active-bg:                 #333333;
-  --article-card-shadow:       0 2px 8px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --article-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --article-card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 10px 24px rgba(0, 0, 0, 0.45);
   --action-button-border-color: rgba(255, 255, 255, 0.12);
   --action-button-hover-bg:    #2e2e2e;
   --action-button-shadow:      0 2px 6px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -1640,7 +1662,6 @@ body.theme-sepia {
 }
 
 .theme-night .article-list-layout-card #item-list-scroll .selectgroup-label {
-  border-color: #2e2e2e;
   background-color: #232323;
 }
 
