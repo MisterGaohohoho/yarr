@@ -790,8 +790,7 @@ hr {
 
 .content-source-name:hover {
   color: var(--accent-color);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
 }
 
 .toolbar-item.active,

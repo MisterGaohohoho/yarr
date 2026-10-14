@@ -123,9 +123,17 @@ func TestRSSAndFreshCacheAtNight(t *testing.T) {
 	if item.GUID.Value != "20" || item.GUID.IsPermaLink != "false" || item.Author != "UP 主" || item.Link != "https://www.bilibili.com/video/BVtestNew" || rss.Channel.Items[1].Link != "https://www.bilibili.com/video/av10" {
 		t.Fatal(rss.Channel.Items)
 	}
-	for _, want := range []string{"<iframe ", "player.bilibili.com", "autoplay=0", "video-wrapper", "sandbox=", "<img ", "&lt;script&gt;", "<br>"} {
+	for _, want := range []string{"<iframe ", "www.bilibili.com/blackboard/html5mobileplayer.html", `width="640" height="360"`, `frameborder="0"`, `allowfullscreen=""`, "sandbox=", "<img ", "&lt;script&gt;", "<br>"} {
 		if !strings.Contains(item.Description, want) {
 			t.Errorf("missing %s: %s", want, item.Description)
+		}
+	}
+	for i, want := range []string{
+		`src="https://www.bilibili.com/blackboard/html5mobileplayer.html?aid=20&amp;bvid=BVtestNew"`,
+		`src="https://www.bilibili.com/blackboard/html5mobileplayer.html?aid=10"`,
+	} {
+		if !strings.Contains(rss.Channel.Items[i].Description, want) {
+			t.Errorf("missing player URL %s: %s", want, rss.Channel.Items[i].Description)
 		}
 	}
 	playerAt, coverAt, introAt := strings.Index(item.Description, "<iframe "), strings.Index(item.Description, "<img "), strings.Index(item.Description, "intro ")

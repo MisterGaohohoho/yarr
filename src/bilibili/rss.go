@@ -182,14 +182,15 @@ func (c *client) fetch(ctx context.Context, uid, cookie string) ([]byte, error) 
 func videoItem(v video, bvid, author string) rssItem {
 	aid := v.AID.String()
 	link := "https://www.bilibili.com/video/av" + aid
-	player := url.Values{"aid": {aid}, "autoplay": {"0"}}
+	// The mobile player enables autoplay for any nonempty autoplay parameter, including "0".
+	player := url.Values{"aid": {aid}}
 	if bvidPattern.MatchString(bvid) {
 		link = "https://www.bilibili.com/video/" + bvid
 		player.Set("bvid", bvid)
 	}
 	item := rssItem{Title: v.Title, Link: link, GUID: guid{"false", aid}, PubDate: time.Unix(v.Pubdate, 0).UTC().Format(time.RFC1123Z), Author: author}
 	cover := coverURL(v.Pic)
-	body := `<iframe src="` + html.EscapeString("https://player.bilibili.com/player.html?"+player.Encode()) + `"></iframe>`
+	body := `<iframe width="640" height="360" src="` + html.EscapeString("https://www.bilibili.com/blackboard/html5mobileplayer.html?"+player.Encode()) + `" frameborder="0" allowfullscreen></iframe>`
 	if cover != "" {
 		body += `<p><img src="` + html.EscapeString(cover) + `" alt="` + html.EscapeString(v.Title) + `"></p>`
 		contentType := "image/jpeg"
