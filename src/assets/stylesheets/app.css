@@ -509,7 +509,7 @@ select.form-control:not([multiple]):not([size]) {
    symmetric 6px scrollbar gutter already adds space, so subtract it; the right
    side also loses 1px to the pane divider drawn inside the column. */
 .article-list-layout-card #item-list-scroll {
-  --card-gap: .625rem;
+  --card-gap: .9rem;
   padding: var(--card-gap) calc(var(--card-gap) - 6px + 1px) var(--card-gap) calc(var(--card-gap) - 6px) !important;
 }
 
