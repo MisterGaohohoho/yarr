@@ -1260,13 +1260,28 @@ hr {
   text-decoration: none;
 }
 
+/* ranking cards share the item-list card look: borderless, floating shadow */
 .content .bilibili-ranking-card {
   overflow: hidden;
-  margin: 0 0 1rem;
-  border: 1px solid var(--generated-card-border);
+  margin: 0 0 .75rem;
+  border: 0;
   border-radius: var(--radius-md);
   background: var(--generated-card-bg);
   box-shadow: var(--article-card-shadow);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+
+.content .bilibili-ranking-card:hover {
+  box-shadow: var(--article-card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content .bilibili-ranking-card,
+  .content .bilibili-ranking-card:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 .content .bilibili-ranking-image {
@@ -1282,7 +1297,7 @@ hr {
 }
 
 .content .bilibili-ranking-meta {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.2rem;
   color: var(--generated-card-meta-color);
   font-size: 0.875rem;
   line-height: 1.35;
@@ -1291,7 +1306,7 @@ hr {
   gap: .75rem;
   justify-content: space-between;
   text-indent: 0;
-  padding: 7px 10px 0;
+  padding: .45rem .6rem 0;
 }
 
 .content .bilibili-ranking-title {
@@ -1303,7 +1318,7 @@ hr {
   display: block;
   list-style: none;
   text-indent: 0;
-  padding: 0 10px 7px;
+  padding: 0 .6rem .45rem;
 }
 
 .content .bilibili-ranking-meta span {
@@ -1318,9 +1333,20 @@ hr {
   display: none;
 }
 
+/* no focus ring on mouse click; keep it for keyboard users */
+.content .bilibili-ranking-title:focus {
+  outline: none;
+}
+
+.content .bilibili-ranking-title:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
 .content .bilibili-ranking-content {
-  padding: 7px 10px;
-  border-top: 1px solid var(--generated-card-border);
+  padding: .45rem .6rem;
+  border-top: 1px solid var(--item-list-separator-color);
 }
 
 .content .bilibili-ranking-open-original {
@@ -1536,7 +1562,7 @@ button.theme-light {
   --content-table-header-bg:   #e6d7a8;
   --content-table-stripe-bg:   rgba(122, 93, 42, 0.05);
   --feed-folder-sticky-bg:     #f0e8d0;
-  --generated-card-bg:         #faf3db;
+  --generated-card-bg:         #f7edca;
   --generated-card-border:     #d2bd84;
   --generated-card-meta-color: #7a6b50;
   --generated-card-title-color: #2a1e0e;
@@ -1626,7 +1652,7 @@ body.theme-sepia {
   --content-table-header-bg:   #2a2a2a;
   --content-table-stripe-bg:   rgba(255, 255, 255, 0.025);
   --feed-folder-sticky-bg:     #181818;
-  --generated-card-bg:         #252525;
+  --generated-card-bg:         #232323;
   --generated-card-border:     #383838;
   --generated-card-meta-color: #9b9b97;
   --generated-card-title-color: #e2e2de;
