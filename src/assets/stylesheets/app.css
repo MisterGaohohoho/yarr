@@ -314,6 +314,16 @@ select.form-control:not([multiple]):not([size]) {
   color: var(--accent-contrast-color);
 }
 
+.item-list-title {
+  font-size: .9rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
 .item-list-text {
   min-width: 0;
 }
@@ -666,6 +676,22 @@ a {
 
 .btn-link:hover {
   text-decoration: none;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: .75rem 0;
+}
+
+.content-source-name {
+  cursor: pointer;
+}
+
+.content-source-name:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .toolbar-item.active,
