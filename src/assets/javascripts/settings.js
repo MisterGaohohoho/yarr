@@ -44,11 +44,12 @@ var settingsMixin = {
       fontSizeMax: APP_FONT_SIZE_MAX,
       settingsClosing: false,
       settingsAuthLoaded: false,
+      settingsExpanded: {rsshubdetails: false, bilibili: false, auth: false},
     }
   },
   watch: {
-    settings: function(value, oldValue) {
-      if (oldValue === 'bilibili' && value !== 'bilibili') this.bilibiliCookieDraft = ''
+    settings: function(value) {
+      if (!value) this.collapseSettingsPanels()
     },
   },
   computed: {
@@ -83,8 +84,7 @@ var settingsMixin = {
     settingsTitle: function() {
       if (this.settings === 'feed') return this.settingsFeed ? this.settingsFeed.title : '订阅源设置'
       if (this.settings === 'folder') return this.settingsFolder ? this.settingsFolder.title : '文件夹设置'
-      return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源', auth: '访问认证',
-        bilibili: 'Bilibili 关注视频', rsshubdetails: 'RSSHub 刷新详情', shortcuts: '键盘快捷键'}[this.settings] || '设置'
+      return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源', shortcuts: '键盘快捷键'}[this.settings] || '设置'
     },
     settingsKey: function() {
       return this.settings + ':' + (this.settingsFeed ? this.settingsFeed.id : this.settingsFolder ? this.settingsFolder.id : '')
@@ -152,10 +152,25 @@ var settingsMixin = {
       if (name === 'create' && !this.settingsNewURL) {
         this.feedNewFolderId = this.current.feed.folder_id || this.current.folder.id || null
       }
+      this.pushSettingsHistory()
+    },
+    toggleSettingsPanel: function(name) {
+      var open = !this.settingsExpanded[name]
+      this.settingsExpanded[name] = open
+      if (!open) {
+        if (name === 'bilibili') this.bilibiliCookieDraft = ''
+        if (name === 'auth') this.settingsAuthLoaded = false
+        return
+      }
       if (name === 'auth') this.loadAuthConfig()
       if (name === 'bilibili') this.loadBilibiliConfig()
       if (name === 'rsshubdetails') this.refreshStats()
-      this.pushSettingsHistory()
+    },
+    collapseSettingsPanels: function() {
+      Object.keys(this.settingsExpanded).forEach(function(name) { this.settingsExpanded[name] = false }.bind(this))
+      this.bilibiliCookieDraft = ''
+      this.authForm.password = ''
+      this.settingsAuthLoaded = false
     },
     showFeedSettings: function(feed) {
       this.showSettings('feed', feed)
@@ -513,7 +528,7 @@ var settingsMixin = {
       return this.runSettingsAction('auth-load', function() { return api.auth.get() }, function(config) {
         this.authConfig = config
         this.authenticated = config.enabled
-        if (this.settings === 'auth' && !this.settingsAuthLoaded) {
+        if (this.settingsExpanded.auth && !this.settingsAuthLoaded) {
           this.authForm.enabled = config.enabled
           this.authForm.username = config.username || ''
           this.authForm.password = ''

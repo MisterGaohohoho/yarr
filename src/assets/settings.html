@@ -49,7 +49,7 @@
                     <div class="settings-row"><label for="settings-read-items-keep-limit">订阅源已读上限</label>
                         <div class="settings-number-control">
                             <input id="settings-read-items-keep-limit" class="form-control settings-number" type="number" min="1" max="9007199254740991" step="1" v-model="readItemsKeepLimitDraft" :disabled="settingsPending.read_items_keep_limit" @keydown.enter.stop.prevent="saveReadItemsKeepLimit()">
-                            <button class="btn btn-default flex-shrink-0" :disabled="settingsPending.read_items_keep_limit" @click="saveReadItemsKeepLimit()">{{ settingsPending.read_items_keep_limit ? '保存中' : '保存' }}</button>
+                            <button class="settings-btn settings-btn-primary" :disabled="settingsPending.read_items_keep_limit" @click="saveReadItemsKeepLimit()">{{ settingsPending.read_items_keep_limit ? '保存中' : '保存' }}</button>
                         </div>
                     </div>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
@@ -72,28 +72,123 @@
                 </section>
                 <section class="settings-group">
                     <h2><span class="icon" aria-hidden="true">{% inline "rss.svg" %}</span>RSSHub</h2>
-                    <div class="settings-dialog-actions settings-dialog-actions-inline">
-                        <button class="settings-dialog-action" @click="showSettings('rsshubdetails')"><span class="icon mr-2">{% inline "list.svg" %}</span>刷新详情<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
-                    </div>
                     <form class="settings-rsshub-base" @submit.prevent="updateRSSHubBaseUrl()">
                         <label for="rsshub-base-url">基础链接列表</label>
                         <textarea id="rsshub-base-url" name="rsshub_base_url" class="form-control" rows="4" autocomplete="off" spellcheck="false" v-model="settingsRSSHubDraft" placeholder="https://rsshub.rssforever.com&#10;#https://example.com"></textarea>
-                        <div class="settings-rsshub-base-actions" v-if="settingsRSSHubDraft !== rsshubBaseUrl">
-                            <button class="btn btn-link" :disabled="settingsPending.rsshub" type="button" @click="settingsRSSHubDraft = rsshubBaseUrl">取消</button>
-                            <button class="btn btn-default" :disabled="settingsPending.rsshub" type="submit">{{ settingsPending.rsshub ? '保存中' : '保存' }}</button>
+                        <div class="settings-actions" v-if="settingsRSSHubDraft !== rsshubBaseUrl">
+                            <button class="settings-btn" :disabled="settingsPending.rsshub" type="button" @click="settingsRSSHubDraft = rsshubBaseUrl">取消</button>
+                            <button class="settings-btn settings-btn-primary" :disabled="settingsPending.rsshub" type="submit">{{ settingsPending.rsshub ? '保存中' : '保存' }}</button>
                         </div>
                     </form>
                     <setting-field label="Bilibili UID" :draft="settingsDraft('rsshub:bilibili', '')" @save="createRSSHubFeed('bilibili')" placeholder="UID 或空间链接"></setting-field>
                     <setting-field label="Telegram" :draft="settingsDraft('rsshub:telegram', '')" @save="createRSSHubFeed('telegram')" placeholder="频道 ID 或 t.me 链接"></setting-field>
+                    <div class="settings-accordion" :class="{open: settingsExpanded.rsshubdetails}">
+                        <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.rsshubdetails ? 'true' : 'false'" aria-controls="settings-panel-rsshubdetails" @click="toggleSettingsPanel('rsshubdetails')">
+                            <span class="icon" aria-hidden="true">{% inline "list.svg" %}</span>
+                            <span class="settings-accordion-title">刷新详情</span>
+                            <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
+                        </button>
+                        <div id="settings-panel-rsshubdetails" class="settings-accordion-panel" v-if="settingsExpanded.rsshubdetails">
+                        <section class="settings-dialog-section " v-if="rsshubDetails.length">
+                            <header>刷新命中</header>
+                            <div class="settings-dialog-fields">
+                                <div class="settings-dialog-field settings-dialog-field-disabled rsshub-detail-row" v-for="detail in rsshubDetails">
+                                    <span class="settings-dialog-field-label">{{ detail.feeds }} 个</span>
+                                    <span class="settings-dialog-field-value">{{ detail.base_url }}</span>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="settings-dialog-section" v-if="hasRSSHubFailureStats()">
+                            <header>刷新失败</header>
+                            <div class="settings-dialog-fields">
+                                <div class="settings-dialog-field settings-dialog-field-disabled rsshub-detail-row" v-for="stat in rsshubFailures.stats">
+                                    <span class="settings-dialog-field-label">{{ stat.feeds }} 个</span>
+                                    <span class="settings-dialog-field-value">{{ stat.error }}</span>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="settings-dialog-section" v-if="hasRSSHubFeedDetails()">
+                            <header>订阅源</header>
+                            <div class="rsshub-detail-feed-list">
+                                <template v-for="detail in rsshubDetails">
+                                    <a class="rsshub-detail-feed-row"
+                                       :href="feed.link"
+                                       rel="noopener noreferrer"
+                                       target="_blank"
+                                       referrerpolicy="no-referrer"
+                                       v-for="feed in detail.details">
+                                        <span class="rsshub-detail-feed-title">{{ feed.title }}</span>
+                                        <span class="rsshub-detail-feed-link">{{ feed.link }}</span>
+                                    </a>
+                                </template>
+                            </div>
+                        </section>
+                        <section class="settings-dialog-section" v-if="hasRSSHubFailedFeeds()">
+                            <header>刷新失败的订阅源</header>
+                            <div class="rsshub-detail-feed-list">
+                                <div class="rsshub-detail-feed-row rsshub-detail-feed-row-static" v-for="feed in rsshubFailures.feeds">
+                                    <span class="rsshub-detail-feed-title">{{ feed.title }}</span>
+                                    <span class="rsshub-detail-feed-link">{{ feed.error }}</span>
+                                </div>
+                            </div>
+                        </section>
+                        <p class="mt-3 light cursor-default" v-if="!rsshubDetails.length && !hasRSSHubFailures()">暂无 RSSHub 基础链接</p>
+                        </div>
+                    </div>
                 </section>
                 <section class="settings-group">
                     <h2><span class="icon" aria-hidden="true">{% inline "folder.svg" %}</span>数据与安全</h2>
                     <div class="settings-row"><label for="settings-backup">自动备份</label><input id="settings-backup" type="checkbox" :checked="backupEnabled" :disabled="settingsPending.backup_enabled" @change="saveGlobalSetting('backupEnabled', 'backup_enabled', $event.target.checked)"></div>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
                         <button class="settings-dialog-action" :disabled="loading.backup" @click="backupData()"><span class="icon mr-2">{% inline "download.svg" %}</span>备份数据</button>
-                        <button class="settings-dialog-action" @click="showSettings('bilibili')"><span class="icon mr-2">{% inline "rss.svg" %}</span>Bilibili 关注视频<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
-                        <button class="settings-dialog-action" @click="showSettings('auth')"><span class="icon mr-2">{% inline "sliders.svg" %}</span>访问认证<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                         <button class="settings-dialog-action" v-if="authenticated" @click="logout()"><span class="icon mr-2">{% inline "log-out.svg" %}</span>退出登录</button>
+                    </div>
+                    <div class="settings-accordion" :class="{open: settingsExpanded.bilibili}">
+                        <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.bilibili ? 'true' : 'false'" aria-controls="settings-panel-bilibili" @click="toggleSettingsPanel('bilibili')">
+                            <span class="icon" aria-hidden="true">{% inline "rss.svg" %}</span>
+                            <span class="settings-accordion-title">Bilibili 关注视频</span>
+                            <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
+                        </button>
+                        <div id="settings-panel-bilibili" class="settings-accordion-panel" v-if="settingsExpanded.bilibili">
+                        <p class="settings-accordion-note">读取登录账号关注的视频动态。订阅链接为 <code>/rss/bilibili/你的UID</code>，UID 必须与 Cookie 登录账号一致。</p>
+                        <p class="settings-accordion-note" aria-live="polite">Cookie：{{ settingsPending['bilibili-load'] ? '正在读取配置状态…' : bilibiliConfigured ? '已配置' : '未配置' }}</p>
+                        <form @submit.prevent="updateBilibiliConfig(false)">
+                            <label for="bilibili-cookie">Bilibili Cookie</label>
+                            <textarea id="bilibili-cookie" class="textarea form-control" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" v-model="bilibiliCookieDraft" placeholder="粘贴完整 Cookie，保存后不回显" v-focus></textarea>
+                            <p class="settings-accordion-note">Cookie 随数据库备份保存。替换或清空后，旧内容缓存会失效。</p>
+                            <div class="settings-actions">
+                                <button class="settings-btn settings-btn-danger" :disabled="settingsPending.bilibili || settingsPending['bilibili-load'] || !bilibiliConfigured" type="button" @click="updateBilibiliConfig(true)">清空 Cookie</button>
+                                <button class="settings-btn settings-btn-primary" :disabled="settingsPending.bilibili || settingsPending['bilibili-load'] || !bilibiliCookieDraft.trim()" type="submit">{{ settingsPending.bilibili ? '保存中' : '保存' }}</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                    <div class="settings-accordion" :class="{open: settingsExpanded.auth}">
+                        <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.auth ? 'true' : 'false'" aria-controls="settings-panel-auth" @click="toggleSettingsPanel('auth')">
+                            <span class="icon" aria-hidden="true">{% inline "sliders.svg" %}</span>
+                            <span class="settings-accordion-title">访问认证</span>
+                            <span class="settings-accordion-summary">{{ authenticated ? '已启用' : '未启用' }}</span>
+                            <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
+                        </button>
+                        <div id="settings-panel-auth" class="settings-accordion-panel" v-if="settingsExpanded.auth">
+                        <form action="" @submit.prevent="updateAuthConfig()">
+                            <div class="settings-row"><span>状态</span>
+                                <div class="settings-segmented settings-segmented-compact">
+                                    <button class="btn btn-link" type="button" :aria-pressed="authForm.enabled" :class="{active: authForm.enabled}" @click="authForm.enabled=true">启用</button>
+                                    <button class="btn btn-link" type="button" :aria-pressed="!authForm.enabled" :class="{active: !authForm.enabled}" @click="authForm.enabled=false">关闭</button>
+                                </div>
+                            </div>
+                            <template v-if="authForm.enabled">
+                                <label for="auth-username" class="settings-accordion-label">用户名</label>
+                                <input id="auth-username" name="username" type="text" class="form-control" required autocomplete="off" v-model="authForm.username" v-focus>
+                                <label for="auth-password" class="settings-accordion-label">密码</label>
+                                <input id="auth-password" name="password" type="password" class="form-control" required autocomplete="new-password" v-model="authForm.password">
+                            </template>
+                            <div class="settings-actions">
+                                <button class="settings-btn settings-btn-primary" :disabled="settingsPending.auth || settingsPending['auth-load']" type="submit">{{ settingsPending.auth ? '保存中' : '保存' }}</button>
+                            </div>
+                        </form>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -295,7 +390,9 @@
                             </div>
                         </label>
                     </div>
-                    <button class="btn btn-block btn-default mt-3" :class="{loading: loading.newfeed}" :disabled="loading.newfeed" type="submit">添加</button>
+                    <div class="settings-actions">
+                        <button class="settings-btn settings-btn-primary" :class="{loading: loading.newfeed}" :disabled="loading.newfeed" type="submit">添加</button>
+                    </div>
                 </form>
             </div>
             <div v-else-if="settings=='deletefeeds'" class="settings-dialog">
@@ -312,9 +409,9 @@
                 </div>
                 <p class="mt-3 light cursor-default" v-else>暂无订阅源</p>
 
-                <div class="d-flex justify-content-end mt-4">
-                    <button class="btn btn-link mr-2" type="button" @click="backSettings()">取消</button>
-                    <button class="btn btn-default text-danger"
+                <div class="settings-actions">
+                    <button class="settings-btn" type="button" @click="backSettings()">取消</button>
+                    <button class="settings-btn settings-btn-danger"
                             :class="{loading: loading.deletefeeds}"
                             :disabled="!feedDeleteSelectedIds.length || loading.deletefeeds"
                             type="button"
@@ -322,84 +419,6 @@
                         删除
                     </button>
                 </div>
-            </div>
-            <div v-else-if="settings=='bilibili'">
-                <p>读取登录账号关注的视频动态。订阅链接为 <code>/rss/bilibili/你的UID</code>，UID 必须与 Cookie 登录账号一致。</p>
-                <p aria-live="polite">Cookie：{{ settingsPending['bilibili-load'] ? '正在读取配置状态…' : bilibiliConfigured ? '已配置' : '未配置' }}</p>
-                <form @submit.prevent="updateBilibiliConfig(false)">
-                    <label for="bilibili-cookie">Bilibili Cookie</label>
-                    <textarea id="bilibili-cookie" class="textarea form-control" rows="6" autocomplete="off" autocapitalize="off" spellcheck="false" v-model="bilibiliCookieDraft" placeholder="粘贴完整 Cookie，保存后不回显" v-focus></textarea>
-                    <p class="mt-3">Cookie 随数据库备份保存。替换或清空后，旧内容缓存会失效。</p>
-                    <button class="btn btn-default mt-3" :disabled="settingsPending.bilibili || settingsPending['bilibili-load'] || !bilibiliCookieDraft.trim()" type="submit">保存</button>
-                    <button class="btn btn-link mt-3" :disabled="settingsPending.bilibili || settingsPending['bilibili-load'] || !bilibiliConfigured" type="button" @click="updateBilibiliConfig(true)">清空 Cookie</button>
-                </form>
-            </div>
-            <div v-else-if="settings=='auth'">
-
-                <form action="" @submit.prevent="updateAuthConfig()" class="mt-4">
-                    <section class="settings-dialog-section">
-                        <header>状态</header>
-                        <div class="settings-segmented settings-segmented-compact">
-                            <button class="btn btn-link" type="button" :aria-pressed="authForm.enabled" :class="{active: authForm.enabled}" @click="authForm.enabled=true">启用</button>
-                            <button class="btn btn-link" type="button" :aria-pressed="!authForm.enabled" :class="{active: !authForm.enabled}" @click="authForm.enabled=false">关闭</button>
-                        </div>
-                    </section>
-                    <template v-if="authForm.enabled">
-                        <label for="auth-username" class="mt-3">用户名</label>
-                        <input id="auth-username" name="username" type="text" class="form-control" required autocomplete="off" v-model="authForm.username" v-focus>
-                        <label for="auth-password" class="mt-3">密码</label>
-                        <input id="auth-password" name="password" type="password" class="form-control" required autocomplete="new-password" v-model="authForm.password">
-                    </template>
-                    <button class="btn btn-default mt-3" :disabled="settingsPending.auth || settingsPending['auth-load']" type="submit">保存</button>
-                </form>
-            </div>
-            <div v-else-if="settings=='rsshubdetails'" class="settings-dialog">
-
-
-                <section class="settings-dialog-section mt-3" v-if="rsshubDetails.length">
-                    <header>刷新命中</header>
-                    <div class="settings-dialog-fields">
-                        <div class="settings-dialog-field settings-dialog-field-disabled rsshub-detail-row" v-for="detail in rsshubDetails">
-                            <span class="settings-dialog-field-label">{{ detail.feeds }} 个</span>
-                            <span class="settings-dialog-field-value">{{ detail.base_url }}</span>
-                        </div>
-                    </div>
-                </section>
-                <section class="settings-dialog-section" v-if="hasRSSHubFailureStats()">
-                    <header>刷新失败</header>
-                    <div class="settings-dialog-fields">
-                        <div class="settings-dialog-field settings-dialog-field-disabled rsshub-detail-row" v-for="stat in rsshubFailures.stats">
-                            <span class="settings-dialog-field-label">{{ stat.feeds }} 个</span>
-                            <span class="settings-dialog-field-value">{{ stat.error }}</span>
-                        </div>
-                    </div>
-                </section>
-                <section class="settings-dialog-section" v-if="hasRSSHubFeedDetails()">
-                    <header>订阅源</header>
-                    <div class="rsshub-detail-feed-list">
-                        <template v-for="detail in rsshubDetails">
-                            <a class="rsshub-detail-feed-row"
-                               :href="feed.link"
-                               rel="noopener noreferrer"
-                               target="_blank"
-                               referrerpolicy="no-referrer"
-                               v-for="feed in detail.details">
-                                <span class="rsshub-detail-feed-title">{{ feed.title }}</span>
-                                <span class="rsshub-detail-feed-link">{{ feed.link }}</span>
-                            </a>
-                        </template>
-                    </div>
-                </section>
-                <section class="settings-dialog-section" v-if="hasRSSHubFailedFeeds()">
-                    <header>刷新失败的订阅源</header>
-                    <div class="rsshub-detail-feed-list">
-                        <div class="rsshub-detail-feed-row rsshub-detail-feed-row-static" v-for="feed in rsshubFailures.feeds">
-                            <span class="rsshub-detail-feed-title">{{ feed.title }}</span>
-                            <span class="rsshub-detail-feed-link">{{ feed.error }}</span>
-                        </div>
-                    </div>
-                </section>
-                <p class="mt-3 light cursor-default" v-if="!rsshubDetails.length && !hasRSSHubFailures()">暂无 RSSHub 基础链接</p>
             </div>
             <div v-else-if="settings=='shortcuts'">
 

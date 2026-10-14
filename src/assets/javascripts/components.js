@@ -11,8 +11,8 @@ Vue.component('setting-field', {
         <div v-else class="setting-field-editor">
           <input class="form-control" type="text" :aria-label="label" v-model="draft.value" :disabled="draft.saving" :placeholder="placeholder" @keydown.enter.stop.prevent="$emit('save')" @keydown.esc.stop.prevent="cancel" v-focus>
           <div class="setting-field-actions">
-            <button type="button" class="btn btn-default" :disabled="draft.saving" @click="$emit('save')">{{ draft.saving ? '保存中' : '保存' }}</button>
-            <button type="button" class="btn btn-link" :disabled="draft.saving" @click="cancel">取消</button>
+            <button type="button" class="settings-btn" :disabled="draft.saving" @click="cancel">取消</button>
+            <button type="button" class="settings-btn settings-btn-primary" :disabled="draft.saving" @click="$emit('save')">{{ draft.saving ? '保存中' : '保存' }}</button>
           </div>
           <p v-if="draft.error" class="text-danger setting-field-error" role="alert">{{ draft.error }}</p>
         </div>
