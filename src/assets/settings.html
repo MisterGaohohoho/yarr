@@ -52,9 +52,6 @@
                             <button class="settings-btn settings-btn-primary" :disabled="settingsPending.read_items_keep_limit" @click="saveReadItemsKeepLimit()">{{ settingsPending.read_items_keep_limit ? '保存中' : '保存' }}</button>
                         </div>
                     </div>
-                    <div class="settings-dialog-actions settings-dialog-actions-inline">
-                        <button class="settings-dialog-action" @click="showSettings('shortcuts')"><span class="icon mr-2">{% inline "help-circle.svg" %}</span>快捷键<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
-                    </div>
                 </section>
                 <section class="settings-group" ref="subscriptionSettings">
                     <h2><span class="icon" aria-hidden="true">{% inline "layers.svg" %}</span>订阅管理</h2>
@@ -138,10 +135,27 @@
                 </section>
                 <section class="settings-group">
                     <h2><span class="icon" aria-hidden="true">{% inline "folder.svg" %}</span>数据与安全</h2>
-                    <div class="settings-row"><label for="settings-backup">自动备份</label><input id="settings-backup" type="checkbox" :checked="backupEnabled" :disabled="settingsPending.backup_enabled" @change="saveGlobalSetting('backupEnabled', 'backup_enabled', $event.target.checked)"></div>
-                    <div class="settings-dialog-actions settings-dialog-actions-inline">
-                        <button class="settings-dialog-action" :disabled="loading.backup" @click="backupData()"><span class="icon mr-2">{% inline "download.svg" %}</span>备份数据</button>
-                        <button class="settings-dialog-action" v-if="authenticated" @click="logout()"><span class="icon mr-2">{% inline "log-out.svg" %}</span>退出登录</button>
+                    <div class="settings-list">
+                        <div class="settings-list-row">
+                            <div class="settings-list-text">
+                                <label class="settings-list-title" for="settings-backup">自动备份</label>
+                                <span class="settings-list-desc">每天 0 点备份数据库与 OPML</span>
+                            </div>
+                            <input id="settings-backup" type="checkbox" :checked="backupEnabled" :disabled="settingsPending.backup_enabled" @change="saveGlobalSetting('backupEnabled', 'backup_enabled', $event.target.checked)">
+                        </div>
+                        <div class="settings-list-row">
+                            <div class="settings-list-text">
+                                <span class="settings-list-title">手动备份</span>
+                                <span class="settings-list-desc">保存到数据库所在目录的 backups/</span>
+                            </div>
+                            <button class="settings-btn" :class="{loading: loading.backup}" :disabled="loading.backup" type="button" @click="backupData()">立即备份</button>
+                        </div>
+                        <div class="settings-list-row" v-if="authenticated">
+                            <div class="settings-list-text">
+                                <span class="settings-list-title">当前会话</span>
+                            </div>
+                            <button class="settings-btn" type="button" @click="logout()">退出登录</button>
+                        </div>
                     </div>
                     <div class="settings-accordion" :class="{open: settingsExpanded.bilibili}">
                         <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.bilibili ? 'true' : 'false'" aria-controls="settings-panel-bilibili" @click="toggleSettingsPanel('bilibili')">
@@ -419,27 +433,6 @@
                         删除
                     </button>
                 </div>
-            </div>
-            <div v-else-if="settings=='shortcuts'">
-
-
-                <table class="table table-borderless table-sm table-compact m-0">
-                    <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td>
-                                                            <td>显示全部订阅源 / 未读 / 收藏</td></tr>
-                    <tr><td colspan=2>&nbsp;</td></tr>
-                    <tr><td><kbd>j</kbd> <kbd>k</kbd></td>  <td>下一篇 / 上一篇文章</td></tr>
-                    <tr><td><kbd>l</kbd> <kbd>h</kbd></td>  <td>下一个 / 上一个订阅源</td></tr>
-                    <tr><td><kbd>q</kbd></td>               <td>关闭文章</td></tr>
-
-                    <tr><td colspan=2>&nbsp;</td></tr>
-                    <tr><td><kbd>R</kbd></td>               <td>全部标为已读</td></tr>
-                    <tr><td><kbd>r</kbd></td>               <td>标为已读 / 未读</td></tr>
-                    <tr><td><kbd>s</kbd></td>               <td>标为收藏 / 取消收藏</td></tr>
-                    <tr><td><kbd>o</kbd></td>               <td>打开链接</td></tr>
-                    <tr><td><kbd>i</kbd></td>               <td>正文模式</td> </tr>
-                    <tr><td><kbd>f</kbd> <kbd>b</kbd></td>  <td>向前 / 向后滚动正文</td>
-                    </tr>
-                </table>
             </div>
             <div class="settings-refresh-status" v-if="loading.feeds">
                 <span class="icon loading"></span>

@@ -71,7 +71,6 @@ var shortcutFunctions = {
   },
 }
 
-// Keep the shortcuts settings page in sync with these bindings.
 var keybindings = {
   "o": shortcutFunctions.openItemLink,
   "i": shortcutFunctions.toggleReadability,

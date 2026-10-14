@@ -84,7 +84,7 @@ var settingsMixin = {
     settingsTitle: function() {
       if (this.settings === 'feed') return this.settingsFeed ? this.settingsFeed.title : '订阅源设置'
       if (this.settings === 'folder') return this.settingsFolder ? this.settingsFolder.title : '文件夹设置'
-      return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源', shortcuts: '键盘快捷键'}[this.settings] || '设置'
+      return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源'}[this.settings] || '设置'
     },
     settingsKey: function() {
       return this.settings + ':' + (this.settingsFeed ? this.settingsFeed.id : this.settingsFolder ? this.settingsFolder.id : '')
