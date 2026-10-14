@@ -146,6 +146,20 @@ Vue.directive('pull-refresh', {
   },
 })
 
+// 滚动时显示滚动条，停止滚动后自动隐藏（配合 .is-scrolling 样式）
+var SCROLLBAR_HIDE_DELAY = 800
+var AUTO_HIDE_SCROLLBAR_SELECTOR = '#feed-list-scroll, #item-list-scroll, .content, .settings-scroll'
+
+document.addEventListener('scroll', function(event) {
+  var el = event.target
+  if (!el.matches || !el.matches(AUTO_HIDE_SCROLLBAR_SELECTOR)) return
+  el.classList.add('is-scrolling')
+  clearTimeout(el._scrollbarHideTimeout)
+  el._scrollbarHideTimeout = setTimeout(function() {
+    el.classList.remove('is-scrolling')
+  }, SCROLLBAR_HIDE_DELAY)
+}, true)
+
 Vue.directive('focus', {
   inserted: function(el) {
     el.focus()
