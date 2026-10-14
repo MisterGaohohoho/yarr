@@ -163,6 +163,7 @@
                     <span class="icon toolbar-icon" v-else>{% inline "scroll-x.svg" %}</span>
                 </button>
                 <span class="item-list-times ml-1"
+                      :class="{'item-list-times-ok': currentLastRefreshSucceeded}"
                       v-if="currentLastRefreshedAt">
                     <span class="icon item-list-time-icon"
                           :class="{'item-list-time-icon-success': currentLastRefreshSucceeded}"
@@ -277,6 +278,16 @@
         <!-- item show -->
         <div id="col-item" class="vh-100 d-flex flex-column w-100" style="min-width: 0;">
             {% template "settings" . %}
+            <div class="detail-empty" v-if="!itemSelected && !settings">
+                <span class="icon detail-empty-icon" aria-hidden="true">{% inline "book-open.svg" %}</span>
+                <p class="detail-empty-title">选择一篇文章开始阅读</p>
+                <dl class="detail-empty-keys">
+                    <div><dt><kbd>j</kbd><kbd>k</kbd></dt><dd>下一篇 / 上一篇</dd></div>
+                    <div><dt><kbd>l</kbd><kbd>h</kbd></dt><dd>切换订阅源</dd></div>
+                    <div><dt><kbd>s</kbd></dt><dd>收藏</dd></div>
+                    <div><dt><kbd>R</kbd></dt><dd>全部标为已读</dd></div>
+                </dl>
+            </div>
             <div class="toolbar px-2 d-flex align-items-center" v-if="itemSelected && !settings">
                 <button class="toolbar-item"
                         :disabled="!itemSelectedDetails"

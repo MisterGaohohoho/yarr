@@ -371,7 +371,11 @@ select.form-control:not([multiple]):not([size]) {
 }
 
 #item-list-scroll input:checked + .selectgroup-label {
-  color: var(--accent-contrast-color);
+  color: inherit;
+}
+
+#item-list-scroll input:checked + .selectgroup-label .item-list-title {
+  color: var(--accent-color);
 }
 
 .item-list-title {
@@ -440,7 +444,7 @@ select.form-control:not([multiple]):not([size]) {
 }
 
 #item-list-scroll input:checked + .selectgroup-label .item-author {
-  background-color: color-mix(in srgb, var(--accent-contrast-color) 15%, transparent);
+  background-color: color-mix(in srgb, var(--accent-color) 14%, transparent);
 }
 
 .content-attribution {
@@ -537,12 +541,10 @@ select.form-control:not([multiple]):not([size]) {
   }
 }
 
-.article-list-layout-card #item-list-scroll input:checked + .selectgroup-label {
-  background-color: var(--accent-color) !important;
-}
-
+.article-list-layout-card #item-list-scroll input:checked + .selectgroup-label,
 .article-list-layout-card #item-list-scroll input:checked + .selectgroup-label:hover {
-  background-color: var(--accent-color) !important;
+  background-color: color-mix(in srgb, var(--accent-color) 7%, var(--generated-card-bg)) !important;
+  box-shadow: 0 0 0 1.5px var(--accent-color), var(--article-card-shadow);
 }
 
 .article-list-layout-card .item-list-text {
@@ -794,10 +796,23 @@ hr {
 
 .toolbar-item.active,
 .settings-segmented .btn.active,
-.refresh-rate-picker .btn.active,
-.selectgroup input:checked + .selectgroup-label {
+.refresh-rate-picker .btn.active {
   color: var(--accent-contrast-color);
   background-color: var(--accent-color) !important;
+}
+
+/* selected feed / article row: tinted background + accent text, not a solid block */
+.selectgroup input:checked + .selectgroup-label {
+  color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color) 12%, transparent) !important;
+}
+
+.selectgroup input:checked + .selectgroup-label .counter {
+  opacity: .8;
+}
+
+#feed-list-scroll input:checked + .selectgroup-label {
+  font-weight: 600;
 }
 
 /* ============================================================
@@ -1142,6 +1157,28 @@ hr {
   opacity: 1;
 }
 
+/* when the last refresh succeeded both times are identical: show one value.
+   A failed refresh keeps both (last attempt vs. last success). Full detail
+   stays in each value's title / aria-label. */
+.item-list-times-ok .item-list-time:not(.item-list-time-success) {
+  display: none;
+}
+
+.item-list-times {
+  cursor: default;
+  padding: .15rem .3rem;
+  border-radius: var(--radius-sm);
+}
+
+.item-list-time {
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-list-times:not(.item-list-times-ok) .item-list-time:not(.item-list-time-success) {
+  color: #c0392b;
+}
+
 .item-list-time-success {
   color: var(--accent-color);
 }
@@ -1217,6 +1254,67 @@ hr {
   border: 1px solid var(--border);
   background-color: var(--surface);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+/* ============================================================
+   Empty detail pane
+   ============================================================ */
+
+.detail-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .9rem;
+  padding: 2rem;
+  color: var(--text-muted);
+  user-select: none;
+  animation: fade-in .3s ease both;
+}
+
+.detail-empty-icon,
+.detail-empty-icon > svg {
+  width: 2.25rem;
+  height: 2.25rem;
+  opacity: .35;
+  stroke-width: 1.5;
+}
+
+.detail-empty-title {
+  margin: 0;
+  font-size: .95rem;
+}
+
+.detail-empty-keys {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: .4rem 1.5rem;
+  margin: .4rem 0 0;
+  font-size: .8rem;
+}
+
+.detail-empty-keys > div {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.detail-empty-keys dt {
+  display: flex;
+  gap: .2rem;
+  min-width: 2.6rem;
+  justify-content: flex-end;
+  font-weight: normal;
+}
+
+.detail-empty-keys dd {
+  margin: 0;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ============================================================
@@ -1325,8 +1423,11 @@ hr {
   opacity: .8;
 }
 
-.content .content-title-link {
+.content .content-title-link,
+.content .content-title-link:focus {
+  color: inherit;
   text-decoration: none;
+  transition: color .12s ease;
 }
 
 .content .content-title-link:hover {
@@ -1526,14 +1627,11 @@ kbd {
   color: inherit;
 }
 
+/* paragraphs are separated by spacing; no first-line indent (feeds often start
+   lines with emoji, ▍ markers or quotes, which an indent misaligns) */
 .content p {
-  margin-top: .9rem;
-  margin-bottom: .9rem;
-  text-indent: 2em;
-}
-
-.content p:has(img, picture, video, audio, iframe, figure, table, ul, ol, pre, blockquote, object, embed, svg) {
-  text-indent: 0;
+  margin-top: .8rem;
+  margin-bottom: .8rem;
 }
 
 /* ============================================================

@@ -952,15 +952,83 @@
 
 /* ── Notice bar ── */
 
+/* floating toast over the settings scroll area (doesn't push content down) */
+.settings-workspace {
+  position: relative;
+}
+
 .settings-notice {
-  padding: 0.55rem 1.25rem;
-  border-bottom: 1px solid var(--pane-divider-line);
+  position: absolute;
+  z-index: 5;
+  top: calc(2.25rem + .6rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  width: max-content;
+  max-width: min(32rem, calc(100% - 2rem));
+  max-height: 40vh;
+  overflow: auto;
+  padding: .5rem .5rem .5rem .85rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .08), 0 8px 24px rgba(0, 0, 0, .12);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+
+.settings-notice-text {
+  flex: 1;
+  min-width: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 25vh;
-  overflow: auto;
-  font-size: 0.875rem;
-  background: color-mix(in srgb, var(--accent-color) 6%, var(--toolbar-bg));
+}
+
+.settings-notice-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  opacity: .5;
+  cursor: pointer;
+}
+
+.settings-notice-close:hover {
+  opacity: 1;
+  background: var(--skeleton-base);
+}
+
+.settings-notice-close .icon,
+.settings-notice-close .icon > svg {
+  width: .8rem;
+  height: .8rem;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.toast-enter,
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter-active,
+  .toast-leave-active {
+    transition: none;
+  }
 }
 
 /* ── File input ── */
@@ -1044,9 +1112,6 @@ input[type="radio"] {
 @media (max-width: 767.98px) {
   .settings-scroll {
     padding: 0.4rem 1rem 1.5rem;
-  }
-  .settings-notice {
-    padding: 0.55rem 1rem;
   }
   .settings-row {
     padding: 0.25rem 0;

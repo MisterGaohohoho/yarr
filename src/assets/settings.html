@@ -5,7 +5,12 @@
         <h1 id="settings-heading" ref="settingsHeading" tabindex="-1">{{ settingsTitle }}</h1>
         <button class="toolbar-item toolbar-item-icon-only" @click="closeSettings()" title="关闭设置" aria-label="关闭设置"><span class="icon">{% inline "x.svg" %}</span></button>
     </div>
-    <div v-if="settingsNotice" class="settings-notice" role="status">{{ settingsNotice }}</div>
+    <transition name="toast">
+        <div v-if="settingsNotice" class="settings-notice" role="status">
+            <span class="settings-notice-text">{{ settingsNotice }}</span>
+            <button class="settings-notice-close" type="button" aria-label="关闭提示" @click="notifySettings('')"><span class="icon" aria-hidden="true">{% inline "x.svg" %}</span></button>
+        </div>
+    </transition>
     <div class="settings-scroll scroll-touch" ref="settingsScroll" @scroll="saveSettingsScroll()">
             <div v-if="settings=='menu'" class="settings-dialog">
                 <section class="settings-group">

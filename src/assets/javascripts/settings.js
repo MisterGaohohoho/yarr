@@ -34,6 +34,7 @@ var settingsMixin = {
       settingsScroll: {},
       settingsDrafts: {},
       settingsNotices: {},
+      settingsNoticeTimer: null,
       settingsPending: {},
       settingsReturnFocus: null,
       settingsAfterClose: null,
@@ -250,8 +251,16 @@ var settingsMixin = {
       }
       return this.settingsDrafts[key]
     },
-    notifySettings: function(message, key) {
-      this.$set(this.settingsNotices, key || this.settingsKey, message)
+    // transient notices (plain success messages) dismiss themselves; errors and
+    // multi-line summaries such as the backup path stay until closed
+    notifySettings: function(message, key, transient) {
+      key = key || this.settingsKey
+      this.$set(this.settingsNotices, key, message)
+      clearTimeout(this.settingsNoticeTimer)
+      if (!message || !transient || message.indexOf('\n') !== -1) return
+      this.settingsNoticeTimer = setTimeout(function() {
+        if (this.settingsNotices[key] === message) this.$set(this.settingsNotices, key, '')
+      }.bind(this), 2600)
     },
     runSettingsAction: function(key, action, success, message) {
       if (this.settingsPending[key]) return Promise.resolve(false)
@@ -261,7 +270,7 @@ var settingsMixin = {
       return Promise.resolve().then(action).then(function(result) {
         return Promise.resolve(success && success(result)).then(function() {
           var notice = typeof message === 'function' ? message(result) : message
-          this.notifySettings(notice === undefined ? '已保存。' : notice, pageKey)
+          this.notifySettings(notice === undefined ? '已保存。' : notice, pageKey, true)
           return true
         }.bind(this))
       }.bind(this)).catch(function(error) {
@@ -473,7 +482,7 @@ var settingsMixin = {
         if (result.status === 'success') {
           this.refreshFeeds()
           this.refreshStats()
-          this.notifySettings('已添加订阅源「' + result.feed.title + '」。', pageKey)
+          this.notifySettings('已添加订阅源「' + result.feed.title + '」。', pageKey, true)
           this.resetFeedChoice()
         } else if (allowChoice && result.status === 'multiple') {
           this.feedNewChoice = result.choice
