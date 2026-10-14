@@ -879,6 +879,16 @@ input[type="radio"] {
   accent-color: var(--accent-color);
 }
 
+/* bootstrap paints a blue ring on any focused button (incl. mouse press);
+   only keyboard focus (:focus-visible) gets a ring, in the accent color */
+#app button:focus:not(:focus-visible),
+#app a:focus:not(:focus-visible),
+#app input:focus:not(:focus-visible),
+#app summary:focus:not(:focus-visible),
+#app [tabindex]:focus:not(:focus-visible) {
+  outline: none;
+}
+
 #app button:focus-visible,
 #app a:focus-visible,
 #app input:focus-visible,
