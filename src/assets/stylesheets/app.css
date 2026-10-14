@@ -2013,6 +2013,33 @@ body.theme-sepia {
   }
 }
 
+/* mobile: the visible layer slides in from the right going deeper
+   (feeds → items → article → settings) and from the left coming back */
+@media (max-width: 767.98px) {
+  #app.layer-slide-forward > [id^="col-"],
+  #app.layer-slide-back > [id^="col-"] {
+    animation-duration: .26s;
+    animation-timing-function: cubic-bezier(.2, .75, .25, 1);
+    animation-fill-mode: both;
+  }
+  #app.layer-slide-forward > [id^="col-"] {
+    animation-name: layer-in-forward;
+  }
+  #app.layer-slide-back > [id^="col-"] {
+    animation-name: layer-in-back;
+  }
+}
+
+@keyframes layer-in-forward {
+  from { transform: translateX(28%); opacity: .4; }
+  to   { transform: none; opacity: 1; }
+}
+
+@keyframes layer-in-back {
+  from { transform: translateX(-28%); opacity: .4; }
+  to   { transform: none; opacity: 1; }
+}
+
 @media (max-width: 991.98px) {
   .drag {
     cursor: default;

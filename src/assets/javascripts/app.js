@@ -540,6 +540,7 @@ var vm = new Vue({
       'statusPollTimeout': null,
       'logoRefreshAnimating': false,
       'favoritePop': false,
+      'layerSlide': '',
 
       'refreshRateOptions': [
         { title: "0", value: 0 },
@@ -665,6 +666,13 @@ var vm = new Vue({
     itemAtEnd: function() {
       return !this.items.length || this.itemSelected == this.items[this.items.length - 1].id
     },
+    // which full-screen layer is visible on mobile; drives the slide direction
+    mobileLayer: function() {
+      if (this.settings) return 3
+      if (this.itemSelected !== null) return 2
+      if (this.feedSelected !== null) return 1
+      return 0
+    },
     toolbarNarrow: function() {
       return this.feedListWidth < 280 || this.itemListWidth < 280
     },
@@ -727,6 +735,14 @@ var vm = new Vue({
       this.refreshItems(false)
       if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0
       this.syncNavigationHistory()
+    },
+    'mobileLayer': function(newVal, oldVal) {
+      if (!this.mobileLayout || oldVal === undefined || newVal === oldVal) return
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      this.layerSlide = ''
+      this.$nextTick(function() { this.layerSlide = newVal > oldVal ? 'forward' : 'back' })
+      clearTimeout(this._layerSlideTimer)
+      this._layerSlideTimer = setTimeout(function() { this.layerSlide = '' }.bind(this), 320)
     },
     'itemSelected': function(newVal, oldVal) {
       this.itemSelectedReadability = ''
