@@ -501,12 +501,16 @@ select.form-control:not([multiple]):not([size]) {
   background: transparent;
 }
 
+/* equal visual gutter on all four sides and between cards. Horizontally the
+   symmetric 6px scrollbar gutter already adds space, so subtract it; the right
+   side also loses 1px to the pane divider drawn inside the column. */
 .article-list-layout-card #item-list-scroll {
-  padding: .625rem !important;
+  --card-gap: .625rem;
+  padding: var(--card-gap) calc(var(--card-gap) - 6px + 1px) var(--card-gap) calc(var(--card-gap) - 6px) !important;
 }
 
 .article-list-layout-card #item-list-scroll .selectgroup + .selectgroup {
-  margin-top: .625rem;
+  margin-top: var(--card-gap);
 }
 
 .article-list-layout-card #item-list-scroll .selectgroup-label {
@@ -642,7 +646,7 @@ select.form-control:not([multiple]):not([size]) {
 }
 
 .article-list-layout-card .item-list-skeleton {
-  gap: .625rem;
+  gap: var(--card-gap);
 }
 
 .article-list-layout-card .item-list-skeleton-row + .item-list-skeleton-row {
