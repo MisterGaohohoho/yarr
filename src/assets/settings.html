@@ -12,7 +12,8 @@
         </div>
     </transition>
     <div class="settings-scroll scroll-touch" ref="settingsScroll" @scroll="saveSettingsScroll()">
-            <div v-if="settings=='menu'" class="settings-dialog">
+            <transition :name="settingsTransition" mode="out-in">
+            <div v-if="settings=='menu'" key="menu" class="settings-dialog">
                 <section class="settings-group">
                     <h2><span class="icon" aria-hidden="true">{% inline "sliders.svg" %}</span>外观</h2>
                     <div class="settings-row"><span>主题</span>
@@ -286,7 +287,7 @@
                     </div>
                 </section>
             </div>
-            <div v-else-if="settings=='feed' && settingsFeed" class="settings-dialog">
+            <div v-else-if="settings=='feed' && settingsFeed" :key="'feed:' + settingsFeed.id" class="settings-dialog">
 
 
                 <div class="settings-dialog-actions settings-dialog-actions-inline settings-dialog-actions-three mt-3">
@@ -415,7 +416,7 @@
                 </section>
 
             </div>
-            <div v-else-if="settings=='folder' && settingsFolder" class="settings-dialog">
+            <div v-else-if="settings=='folder' && settingsFolder" :key="'folder:' + settingsFolder.id" class="settings-dialog">
 
 
                 <div class="settings-dialog-actions mt-3">
@@ -426,7 +427,7 @@
                     </button>
                 </div>
             </div>
-            <div v-else-if="settings=='deletefeeds'" class="settings-dialog">
+            <div v-else-if="settings=='deletefeeds'" key="deletefeeds" class="settings-dialog">
 
 
                 <div class="feed-delete-list" v-if="feedDeleteGroups.length">
@@ -458,6 +459,7 @@
                     </button>
                 </div>
             </div>
+            </transition>
             <div class="settings-refresh-status" v-if="loading.feeds">
                 <span class="icon loading"></span>
                 <span class="text-truncate cursor-default noselect">正在刷新（剩余 {{ loading.feeds }} 个）</span>

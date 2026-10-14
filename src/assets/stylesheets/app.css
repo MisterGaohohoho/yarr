@@ -1888,6 +1888,54 @@ body.theme-sepia {
    Indicator animation (unread / favorite badge)
    ============================================================ */
 
+/* ============================================================
+   Motion: article open, favorite, read state, skeleton → content
+   ============================================================ */
+
+/* new article: content rises in slightly (keyed on itemSelected) */
+.content-wrapper {
+  animation: content-in .22s cubic-bezier(.2, .7, .3, 1) both;
+}
+
+@keyframes content-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* favorite: star pops when marked */
+.favorite-pop .toolbar-icon {
+  animation: favorite-pop .38s cubic-bezier(.3, 1.6, .5, 1);
+}
+
+@keyframes favorite-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35) rotate(-8deg); }
+  100% { transform: scale(1); }
+}
+
+/* item rows fade to the read color instead of snapping */
+#item-list-scroll .selectgroup-label,
+#item-list-scroll .item-list-title {
+  transition: color .3s ease, background-color .12s ease;
+}
+
+/* loaded rows fade in after the skeleton */
+#item-list-scroll > .selectgroup {
+  animation: fade-in .2s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-wrapper,
+  .favorite-pop .toolbar-icon,
+  #item-list-scroll > .selectgroup {
+    animation: none;
+  }
+  #item-list-scroll .selectgroup-label,
+  #item-list-scroll .item-list-title {
+    transition: none;
+  }
+}
+
 .indicator-enter-active, .indicator-leave-active {
   transition: all .2s;
 }

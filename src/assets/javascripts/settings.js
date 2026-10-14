@@ -44,6 +44,7 @@ var settingsMixin = {
       fontSizeMin: APP_FONT_SIZE_MIN,
       fontSizeMax: APP_FONT_SIZE_MAX,
       settingsClosing: false,
+      settingsTransition: 'settings-page-forward',
       settingsAuthLoaded: false,
       settingsExpanded: {create: false, rsshubdetails: false, bilibili: false, auth: false},
     }
@@ -128,6 +129,10 @@ var settingsMixin = {
       }
     },
     restoreSettingsPage: function(page) {
+      // deeper in the stack = forward; same or shallower = back
+      var depth = this.settingsStack.length
+      this.settingsTransition = depth >= (this._settingsDepth || 0) ? 'settings-page-forward' : 'settings-page-back'
+      this._settingsDepth = depth
       this.settings = page.name
       this.settingsFeed = page.feedId ? this.feeds.find(function(feed) { return feed.id === page.feedId }) : null
       this.settingsFolder = page.folderId ? this.folders.find(function(folder) { return folder.id === page.folderId }) : null

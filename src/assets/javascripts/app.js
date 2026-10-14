@@ -539,6 +539,7 @@ var vm = new Vue({
       'feed_errors': {},
       'statusPollTimeout': null,
       'logoRefreshAnimating': false,
+      'favoritePop': false,
 
       'refreshRateOptions': [
         { title: "0", value: 0 },
@@ -1210,6 +1211,10 @@ var vm = new Vue({
     },
     toggleItemFavorite: function(item) {
       var favorite = !item.favorite
+      if (favorite) {
+        this.favoritePop = false
+        this.$nextTick(function() { this.favoritePop = true })
+      }
       api.items.update(item.id, {favorite: favorite}).then(function() {
         var feedStats = this.feedStats[item.feed_id]
         if (feedStats) feedStats.favorite += favorite ? 1 : -1

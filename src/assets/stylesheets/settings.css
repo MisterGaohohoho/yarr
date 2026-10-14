@@ -22,6 +22,29 @@
   background: var(--toolbar-bg);
 }
 
+/* ── Sub-page transition (menu ⇄ feed / folder / delete feeds) ── */
+
+.settings-page-forward-enter-active,
+.settings-page-forward-leave-active,
+.settings-page-back-enter-active,
+.settings-page-back-leave-active {
+  transition: opacity .16s ease, transform .16s ease;
+}
+
+.settings-page-forward-enter { opacity: 0; transform: translateX(16px); }
+.settings-page-forward-leave-to { opacity: 0; transform: translateX(-16px); }
+.settings-page-back-enter { opacity: 0; transform: translateX(-16px); }
+.settings-page-back-leave-to { opacity: 0; transform: translateX(16px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-page-forward-enter-active,
+  .settings-page-forward-leave-active,
+  .settings-page-back-enter-active,
+  .settings-page-back-leave-active {
+    transition: none;
+  }
+}
+
 /* ── Toolbar ── */
 
 .settings-toolbar {

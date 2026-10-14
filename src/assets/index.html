@@ -291,8 +291,9 @@
             <div class="toolbar px-2 d-flex align-items-center" v-if="itemSelected && !settings">
                 <button class="toolbar-item"
                         :disabled="!itemSelectedDetails"
-                        :class="{'toolbar-status-active': itemSelectedDetails && itemSelectedDetails.favorite}"
+                        :class="{'toolbar-status-active': itemSelectedDetails && itemSelectedDetails.favorite, 'favorite-pop': favoritePop}"
                         @click="toggleItemFavorite(itemSelectedDetails)"
+                        @animationend="favoritePop = false"
                         title="标为收藏">
                     <span class="icon toolbar-icon" v-if="itemSelectedDetails && itemSelectedDetails.favorite" >{% inline "star-full.svg" %}</span>
                     <span class="icon toolbar-icon" v-else >{% inline "star.svg" %}</span>
@@ -352,7 +353,7 @@
                  ref="content"
                  class="content px-4 pt-3 pb-5 border-top overflow-auto scroll-touch"
                  @click="onContentClick">
-                <div class="content-wrapper">
+                <div class="content-wrapper" :key="itemSelected">
                     <h1 v-if="showItemDetailsMeta">
                         <a class="content-title-link" :href="itemSelectedDetails.link" rel="noopener noreferrer" target="_blank" referrerpolicy="no-referrer" title="打开链接">
                             <b>{{ itemSelectedDetails.title || '无标题' }}</b>
