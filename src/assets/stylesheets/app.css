@@ -477,19 +477,28 @@ select.form-control:not([multiple]):not([size]) {
    Article list layouts
    ============================================================ */
 
+/* separators live in the 1px gap between rows (not on the row itself) so rows
+   keep all four corners rounded; they hide next to a hovered/selected row */
 .article-list-layout-list #item-list-scroll .selectgroup + .selectgroup {
-  margin-top: 0;
+  margin-top: 1px;
 }
 
-.article-list-layout-list #item-list-scroll .selectgroup + .selectgroup .selectgroup-label {
-  border-top: 1px solid var(--item-list-separator-color);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+.article-list-layout-list #item-list-scroll .selectgroup + .selectgroup::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--item-list-separator-color);
+  pointer-events: none;
 }
 
-.article-list-layout-list #item-list-scroll .selectgroup + .selectgroup input:checked + .selectgroup-label {
-  border-top-left-radius: var(--radius-sm);
-  border-top-right-radius: var(--radius-sm);
+.article-list-layout-list #item-list-scroll .selectgroup:hover::before,
+.article-list-layout-list #item-list-scroll .selectgroup:hover + .selectgroup::before,
+.article-list-layout-list #item-list-scroll .selectgroup:has(input:checked)::before,
+.article-list-layout-list #item-list-scroll .selectgroup:has(input:checked) + .selectgroup::before {
+  background: transparent;
 }
 
 .article-list-layout-card #item-list-scroll {
