@@ -1249,10 +1249,16 @@ hr {
   background-color: var(--content-table-stripe-bg);
 }
 
-.content a {
+/* links are marked by accent color alone; hover dims slightly as feedback */
+.content a,
+.content a:hover,
+.content a:focus {
   color: var(--accent-color);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
+}
+
+.content a:hover {
+  opacity: .8;
 }
 
 .content .content-title-link {
