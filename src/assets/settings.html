@@ -85,6 +85,7 @@
                             <span class="settings-accordion-title">刷新详情</span>
                             <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
                         </button>
+                        <collapse>
                         <div id="settings-panel-rsshubdetails" class="settings-accordion-panel" v-if="settingsExpanded.rsshubdetails">
                         <section class="settings-dialog-section " v-if="rsshubDetails.length">
                             <header>刷新命中</header>
@@ -131,6 +132,7 @@
                         </section>
                         <p class="mt-3 light cursor-default" v-if="!rsshubDetails.length && !hasRSSHubFailures()">暂无 RSSHub 基础链接</p>
                         </div>
+                        </collapse>
                     </div>
                 </section>
                 <section class="settings-group">
@@ -163,6 +165,7 @@
                             <span class="settings-accordion-title">Bilibili 关注视频</span>
                             <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
                         </button>
+                        <collapse>
                         <div id="settings-panel-bilibili" class="settings-accordion-panel" v-if="settingsExpanded.bilibili">
                         <p class="settings-accordion-note">读取登录账号关注的视频动态。订阅链接为 <code>/rss/bilibili/你的UID</code>，UID 必须与 Cookie 登录账号一致。</p>
                         <p class="settings-accordion-note" aria-live="polite">Cookie：{{ settingsPending['bilibili-load'] ? '正在读取配置状态…' : bilibiliConfigured ? '已配置' : '未配置' }}</p>
@@ -176,6 +179,7 @@
                             </div>
                         </form>
                         </div>
+                        </collapse>
                     </div>
                     <div class="settings-accordion" :class="{open: settingsExpanded.auth}">
                         <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.auth ? 'true' : 'false'" aria-controls="settings-panel-auth" @click="toggleSettingsPanel('auth')">
@@ -184,6 +188,7 @@
                             <span class="settings-accordion-summary">{{ authenticated ? '已启用' : '未启用' }}</span>
                             <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
                         </button>
+                        <collapse>
                         <div id="settings-panel-auth" class="settings-accordion-panel" v-if="settingsExpanded.auth">
                         <form action="" @submit.prevent="updateAuthConfig()">
                             <div class="settings-row"><span>状态</span>
@@ -203,6 +208,7 @@
                             </div>
                         </form>
                         </div>
+                        </collapse>
                     </div>
                 </section>
             </div>

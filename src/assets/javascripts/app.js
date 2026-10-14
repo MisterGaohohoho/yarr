@@ -1243,11 +1243,31 @@ var vm = new Vue({
       })
     },
     onContentClick: function(e) {
+      if (e.target.closest('.bilibili-ranking-title')) return this.onContentSummaryClick(e)
       var meta = e.target.closest('.bilibili-ranking-meta')
       if (!meta || !this.$refs.content.contains(meta)) return
       var details = meta.nextElementSibling
       if (!details || !details.classList.contains('bilibili-ranking-details')) return
-      details.open = !details.open
+      this.toggleRankingDetails(details)
+    },
+    toggleRankingDetails: function(details) {
+      var body = details.querySelector('.bilibili-ranking-content')
+      if (!body) {
+        details.open = !details.open
+        return
+      }
+      if (details.open) {
+        animateHeight(body, false, function() { details.open = false })
+      } else {
+        details.open = true
+        animateHeight(body, true)
+      }
+    },
+    onContentSummaryClick: function(e) {
+      var summary = e.target.closest('.bilibili-ranking-title')
+      if (!summary || !this.$refs.content.contains(summary)) return
+      e.preventDefault()
+      this.toggleRankingDetails(summary.parentElement)
     },
     loadItemSelectedReadability: function() {
       var item = this.itemSelectedDetails

@@ -739,8 +739,19 @@ select.form-control:not([multiple]):not([size]) {
   background-color: var(--hover-bg);
 }
 
+/* folder chevron: rotate in step with the collapse animation */
+.feed-folder-sticky .selectgroup-label > .icon:first-child {
+  transition: transform .2s ease;
+}
+
 .expanded {
   transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-folder-sticky .selectgroup-label > .icon:first-child {
+    transition: none;
+  }
 }
 
 a {

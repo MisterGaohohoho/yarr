@@ -102,6 +102,7 @@
                             <span class="counter feed-unread-count text-right">{{ filteredFolderStats[folder.id] || '' }}</span>
                         </div>
                     </label>
+                    <collapse>
                     <div v-show="!folder.id || folder.is_expanded" class="mt-1" :class="{'pl-3': folder.id}">
                         <label class="selectgroup feed-selectgroup"
                               :class="{'d-none': mustHideFeed(feed)}"
@@ -116,6 +117,7 @@
                             </div>
                         </label>
                     </div>
+                    </collapse>
                 </div>
             </div>
         </div>

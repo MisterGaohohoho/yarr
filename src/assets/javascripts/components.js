@@ -34,6 +34,75 @@ Vue.component('setting-field', {
   },
 })
 
+var COLLAPSE_DURATION = 200
+
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+// Vertical box properties animated together with height so padding, margins
+// and borders shrink smoothly instead of snapping at the start/end.
+var COLLAPSE_PROPS = ['height', 'paddingTop', 'paddingBottom', 'marginTop', 'marginBottom', 'borderTopWidth', 'borderBottomWidth']
+var COLLAPSE_CSS = ['height', 'padding-top', 'padding-bottom', 'margin-top', 'margin-bottom', 'border-top-width', 'border-bottom-width']
+
+// Animate an element between collapsed (all vertical box props 0) and its
+// natural size. `done` runs once the transition settles (or immediately when
+// motion is reduced).
+function animateHeight(el, open, done) {
+  clearTimeout(el._collapseTimer)
+  if (el._collapseFinish) el._collapseFinish(true)
+  if (prefersReducedMotion()) return done && done()
+
+  var cs = getComputedStyle(el)
+  var full = {}
+  COLLAPSE_PROPS.forEach(function(prop) { full[prop] = cs[prop] })
+  full.height = el.scrollHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) + 'px'
+  if (cs.boxSizing === 'border-box') {
+    full.height = el.getBoundingClientRect().height + 'px'
+  }
+  var apply = function(state) {
+    COLLAPSE_PROPS.forEach(function(prop) { el.style[prop] = state === 'full' ? full[prop] : '0px' })
+    el.style.opacity = state === 'full' ? '1' : '0'
+  }
+
+  el.style.overflow = 'hidden'
+  el.style.transition = 'none'
+  apply(open ? 'zero' : 'full')
+  el.offsetHeight  // flush so the start values apply before transitioning
+  el.style.transition = COLLAPSE_CSS.concat('opacity').map(function(p) { return p + ' ' + COLLAPSE_DURATION + 'ms ease' }).join(', ')
+  apply(open ? 'full' : 'zero')
+
+  var finish = function(interrupted) {
+    el.removeEventListener('transitionend', onEnd)
+    clearTimeout(el._collapseTimer)
+    el._collapseFinish = null
+    // when closing, let `done` hide the element before clearing inline sizes,
+    // otherwise it flashes back to full height for a frame
+    if (!open && !interrupted && done) done()
+    el.style.transition = el.style.opacity = el.style.overflow = ''
+    COLLAPSE_PROPS.forEach(function(prop) { el.style[prop] = '' })
+    if ((open || interrupted) && done) done()
+  }
+  var onEnd = function(e) { if (e.target === el && e.propertyName === 'height') finish(false) }
+  el._collapseFinish = finish
+  el.addEventListener('transitionend', onEnd)
+  el._collapseTimer = setTimeout(function() { finish(false) }, COLLAPSE_DURATION + 50)
+}
+
+// <collapse> wraps a single v-if / v-show child and animates its height.
+Vue.component('collapse', {
+  functional: true,
+  render: function(h, ctx) {
+    return h('transition', {
+      props: {css: false},
+      on: {
+        enter: function(el, done) { animateHeight(el, true, done) },
+        leave: function(el, done) { animateHeight(el, false, done) },
+      },
+    }, ctx.children)
+  },
+})
+
 Vue.component('drag', {
   props: ['width'],
   template: '<div class="drag"></div>',
