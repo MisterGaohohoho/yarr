@@ -192,9 +192,11 @@ select.form-control:not([multiple]):not([size]) {
 }
 
 /* the auto-hidden scrollbar still occupies 6px on the right; mirror it on the
-   left so list rows sit equidistant from both pane dividers */
+   left so content sits equidistant from both pane dividers */
 #feed-list-scroll,
-#item-list-scroll {
+#item-list-scroll,
+.content,
+.settings-scroll {
   scrollbar-gutter: stable both-edges;
 }
 

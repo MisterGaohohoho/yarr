@@ -47,7 +47,6 @@
   min-height: 0;
   overflow: auto;
   padding: 0.5rem 1.25rem 2rem;
-  scrollbar-gutter: stable;
 }
 
 .settings-scroll > div {
