@@ -738,10 +738,12 @@ var vm = new Vue({
     },
     'mobileLayer': function(newVal, oldVal) {
       if (!this.mobileLayout || oldVal === undefined || newVal === oldVal) return
-      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
       this.layerSlide = ''
-      this.$nextTick(function() { this.layerSlide = newVal > oldVal ? 'forward' : 'back' })
       clearTimeout(this._layerSlideTimer)
+      // Browser gestures already animate history traversal; do not replay a slide/fade after it.
+      if (this.navigationHistory.applyingPop && !this.navigationHistory.animatePop) return
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      this.$nextTick(function() { this.layerSlide = newVal > oldVal ? 'forward' : 'back' })
       this._layerSlideTimer = setTimeout(function() { this.layerSlide = '' }.bind(this), 320)
     },
     'itemSelected': function(newVal, oldVal) {

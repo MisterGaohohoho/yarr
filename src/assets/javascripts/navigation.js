@@ -6,6 +6,7 @@ var navigationMixin = {
       'navigationHistory': {
         initialized: false,
         applyingPop: false,
+        animatePop: false,
         syncPending: false,
         layer: null,
       },
@@ -115,6 +116,7 @@ var navigationMixin = {
         }
       } else {
         this.navigationHistory.applyingPop = true
+        this.navigationHistory.animatePop = true
         window.history.go(newRank - oldRank)
         setTimeout(function() {
           this.navigationHistory.applyingPop = false
@@ -161,11 +163,13 @@ var navigationMixin = {
 
       this.$nextTick(function() {
         this.navigationHistory.applyingPop = false
+        this.navigationHistory.animatePop = false
       })
     },
     closeItem: function() {
       if (this.itemSelected === null) return
       if (this.navigationHistory.initialized && this.canUseNavigationHistory()) {
+        this.navigationHistory.animatePop = true
         window.history.back()
         return
       }
@@ -174,6 +178,7 @@ var navigationMixin = {
     showFeedList: function() {
       if (this.feedSelected === null) return
       if (this.navigationHistory.initialized && this.canUseNavigationHistory() && this.currentNavigationLayer() === 'items') {
+        this.navigationHistory.animatePop = true
         window.history.back()
         return
       }

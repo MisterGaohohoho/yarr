@@ -210,6 +210,62 @@ test('mobile browser Back restores settings parents then the original reading la
   await close(p)
 })
 
+test('mobile browser Back does not replay a layer animation after native navigation', async () => {
+  const p = await page(390)
+  await p.evaluate(id => { vm.feedSelected = 'feed:' + id }, feeds[0].id)
+  await p.waitForFunction(() => !vm.loading.items && vm.layerSlide === '')
+  await p.locator('#item-list-scroll .selectgroup-label').first().click()
+  await p.waitForFunction(() => vm.itemSelectedDetails && vm.layerSlide === '')
+  await p.evaluate(() => {
+    window.backAnimations = []
+    document.getElementById('app').addEventListener('animationstart', event => {
+      if (event.animationName === 'layer-in-back') window.backAnimations.push(event.target.id)
+    })
+  })
+  for (const layer of ['items', 'feeds']) {
+    await p.goBack()
+    await p.waitForFunction(layer => vm.currentNavigationLayer() === layer, layer)
+    const result = await p.evaluate(() => new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const column = document.getElementById(vm.feedSelected === null ? 'col-feed-list' : 'col-item-list')
+        const style = getComputedStyle(column)
+        resolve({animations: window.backAnimations, opacity: style.opacity, transform: style.transform})
+      }))
+    }))
+    assert.deepEqual(result, {animations: [], opacity: '1', transform: 'none'}, layer + ' must stay visible after browser Back')
+  }
+  await close(p)
+})
+
+test('mobile toolbar Back retains its animation and browser Back cancels an active forward slide', async () => {
+  const p = await page(390)
+  await p.evaluate(id => { vm.feedSelected = 'feed:' + id }, feeds[0].id)
+  await p.waitForFunction(() => !vm.loading.items && vm.layerSlide === '')
+  await p.locator('#item-list-scroll .selectgroup-label').first().click()
+  await p.waitForFunction(() => vm.itemSelectedDetails && vm.layerSlide === '')
+  await p.getByRole('button', {name: '关闭文章', exact: true}).click()
+  await p.waitForFunction(() => vm.currentNavigationLayer() === 'items' && vm.layerSlide === 'back')
+  assert.equal(await p.locator('#col-item-list').evaluate(el => getComputedStyle(el).animationName), 'layer-in-back')
+  await p.waitForFunction(() => vm.layerSlide === '')
+
+  await p.locator('#item-list-scroll .selectgroup-label').first().click()
+  await p.waitForFunction(() => vm.currentNavigationLayer() === 'item' && vm.layerSlide === 'forward')
+  await p.goBack()
+  await p.waitForFunction(() => vm.currentNavigationLayer() === 'items')
+  const result = await p.evaluate(() => new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const style = getComputedStyle(document.getElementById('col-item-list'))
+      resolve({opacity: style.opacity, transform: style.transform, animation: style.animationName})
+    }))
+  }))
+  assert.deepEqual(result, {opacity: '1', transform: 'none', animation: 'none'})
+
+  await p.getByRole('button', {name: '显示订阅源', exact: true}).click()
+  await p.waitForFunction(() => vm.currentNavigationLayer() === 'feeds' && vm.layerSlide === 'back')
+  assert.equal(await p.locator('#col-feed-list').evaluate(el => getComputedStyle(el).animationName), 'layer-in-back')
+  await close(p)
+})
+
 test('all settings pages fit desktop, tablet and phone widths in every theme', async () => {
   const p = await page()
   const screenshots = process.env.YARR_UI_SCREENSHOTS
