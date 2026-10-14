@@ -141,7 +141,7 @@
   align-items: center;
   justify-content: center;
   width: 2rem;
-  min-height: 1.95rem;
+  height: calc(var(--settings-control-height) - 2px);
   padding: 0;
   border: 0;
   background: transparent;
@@ -168,17 +168,17 @@
 
 .settings-stepper-value {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
   gap: .1rem;
   min-width: 3.25rem;
   padding: 0 .4rem;
-  align-self: center;
   font-size: .875rem;
   font-variant-numeric: tabular-nums;
   border-left: 1px solid var(--settings-line);
   border-right: 1px solid var(--settings-line);
-  line-height: 1.95rem;
+  height: calc(var(--settings-control-height) - 2px);
+  line-height: calc(var(--settings-control-height) - 2px);
 }
 
 .settings-stepper-value span {
@@ -382,9 +382,14 @@
   text-align: left;
 }
 
+/* display state shares the editor's height and padding so toggling into edit
+   mode doesn't shift the row */
 .settings-workspace .settings-dialog-field-value-action {
-  padding: 0.4rem 0.6rem;
-  min-height: 2.1rem;
+  display: flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  min-height: var(--settings-control-height);
+  line-height: 1.35;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, currentColor 2%, transparent);
   border: 1px solid var(--settings-line);
@@ -609,6 +614,7 @@
 
 .setting-field-editor .form-control {
   height: var(--settings-control-height);
+  line-height: 1.35;
   font-size: 0.875rem;
   padding: 0.3rem 0.55rem;
 }
