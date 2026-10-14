@@ -56,15 +56,84 @@
                 <section class="settings-group" ref="subscriptionSettings">
                     <h2><span class="icon" aria-hidden="true">{% inline "layers.svg" %}</span>订阅管理</h2>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
-                        <button class="settings-dialog-action" @click="showSettings('create')"><span class="icon mr-2">{% inline "plus.svg" %}</span>新订阅源</button>
                         <button class="settings-dialog-action" :disabled="!!loading.feeds" @click="refreshAllFeeds()"><span class="icon mr-2">{% inline "rotate-cw.svg" %}</span>刷新订阅源</button>
                         <button class="settings-dialog-action" :disabled="loading.icons" @click="refreshFeedIcons()"><span class="icon mr-2">{% inline "globe.svg" %}</span>更新图标</button>
-                        <button class="settings-dialog-action text-danger" @click="showSettings('deletefeeds')"><span class="icon mr-2">{% inline "trash.svg" %}</span>删除订阅源</button>
                         <form id="opml-import-form" enctype="multipart/form-data">
                             <input id="opml-import" class="settings-file-input" type="file" name="opml" accept=".opml,.xml" :disabled="settingsPending.opml" @change="importOPML">
                             <label class="settings-dialog-action mb-0 cursor-pointer" for="opml-import"><span class="icon mr-2">{% inline "download.svg" %}</span>导入 OPML</label>
                         </form>
                         <a class="settings-dialog-action" href="./opml/export"><span class="icon mr-2">{% inline "upload.svg" %}</span>导出 OPML</a>
+                        <button class="settings-dialog-action text-danger" @click="showSettings('deletefeeds')"><span class="icon mr-2">{% inline "trash.svg" %}</span>删除订阅源</button>
+                    </div>
+                    <div class="settings-accordion" :class="{open: settingsExpanded.create}">
+                        <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.create ? 'true' : 'false'" aria-controls="settings-panel-create" @click="toggleSettingsPanel('create')">
+                            <span class="icon" aria-hidden="true">{% inline "plus.svg" %}</span>
+                            <span class="settings-accordion-title">新订阅源</span>
+                            <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
+                        </button>
+                        <collapse>
+                        <div id="settings-panel-create" class="settings-accordion-panel" v-if="settingsExpanded.create">
+                            <form action="" @submit.prevent="createFeed()">
+                                <label for="feed-url" class="settings-accordion-label settings-accordion-label-first">URL</label>
+                                <input id="feed-url" name="url" v-model="settingsNewURL" type="text" class="form-control" required autocomplete="off" :readonly="feedNewChoice.length > 0" placeholder="https://example.com/feed、Bilibili 空间或 t.me 频道" v-focus>
+                                <div class="settings-row"><span>文件夹</span>
+                                    <div class="settings-segmented feed-folder-picker">
+                                        <label class="btn btn-link mb-0" :class="{active: feedNewFolderId === null}">
+                                            <input type="radio" name="folder_id" :value="null" v-model="feedNewFolderId">
+                                            <span class="text-truncate">无文件夹</span>
+                                        </label>
+                                        <label class="btn btn-link mb-0"
+                                               :class="{active: feedNewFolderId === folder.id}"
+                                               v-for="folder in folders">
+                                            <input type="radio" name="folder_id" :value="folder.id" v-model="feedNewFolderId">
+                                            <span class="icon mr-2">{% inline "folder.svg" %}</span>
+                                            <span class="text-truncate">{{ folder.title }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <setting-field label="新文件夹" :draft="settingsDraft('create:newfolder', '')" @save="createSettingsFolder(null)"></setting-field>
+                                <div class="settings-row"><span>内容方式</span>
+                                    <div class="settings-segmented content-mode-picker">
+                                        <label class="btn btn-link mb-0"
+                                               :class="{active: feedNewContentMode == option.name}"
+                                               v-for="option in contentModeOptions">
+                                            <input type="radio" name="content_mode" :value="option.name" v-model="feedNewContentMode">
+                                            {{ option.title }}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="settings-row" v-if="feedNewContentMode == 'readability'"><label for="feed-content-selector">正文选择器</label>
+                                    <input id="feed-content-selector" name="content_selector" v-model="settingsNewSelector" type="text" class="form-control" autocomplete="off" placeholder=".content__default">
+                                </div>
+                                <div class="settings-row"><span>榜单模式</span>
+                                    <div class="settings-segmented content-mode-picker">
+                                        <label class="btn btn-link mb-0"
+                                               :class="{active: feedNewRankingMode == option.name}"
+                                               v-for="option in rankingModeOptions">
+                                            <input type="radio" name="ranking_mode" :value="option.name" v-model="feedNewRankingMode">
+                                            {{ option.title }}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="settings-feed-choices" v-if="feedNewChoice.length">
+                                    <div class="settings-feed-choices-head">
+                                        <span>找到多个订阅源，请选择一个：</span>
+                                        <button class="settings-btn" type="button" @click="resetFeedChoice()">取消</button>
+                                    </div>
+                                    <label class="selectgroup" v-for="choice in feedNewChoice">
+                                        <input type="radio" name="feedToAdd" :value="choice.url" v-model="feedNewChoiceSelected">
+                                        <div class="selectgroup-label">
+                                            <div class="text-truncate">{{ choice.title }}</div>
+                                            <div class="text-truncate" :class="{light: choice.title}">{{ choice.url }}</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="settings-actions">
+                                    <button class="settings-btn settings-btn-primary" :class="{loading: loading.newfeed}" :disabled="loading.newfeed" type="submit">添加</button>
+                                </div>
+                            </form>
+                        </div>
+                        </collapse>
                     </div>
                 </section>
                 <section class="settings-group">
@@ -351,69 +420,6 @@
                         删除
                     </button>
                 </div>
-            </div>
-            <div v-else-if="settings=='create'">
-
-                <form action="" @submit.prevent="createFeed()" class="mt-4">
-                    <label for="feed-url">URL</label>
-                    <input id="feed-url" name="url" v-model="settingsNewURL" type="text" class="form-control" required autocomplete="off" :readonly="feedNewChoice.length > 0" placeholder="https://example.com/feed、Bilibili 空间或 t.me 频道" v-focus>
-                    <label class="mt-3 d-block">
-                        文件夹
-
-                    </label>
-                    <div class="settings-segmented feed-folder-picker">
-                        <label class="btn btn-link mb-0" :class="{active: feedNewFolderId === null}">
-                            <input type="radio" name="folder_id" :value="null" v-model="feedNewFolderId">
-                            <span class="text-truncate">无文件夹</span>
-                        </label>
-                        <label class="btn btn-link mb-0"
-                               :class="{active: feedNewFolderId === folder.id}"
-                               v-for="folder in folders">
-                            <input type="radio" name="folder_id" :value="folder.id" v-model="feedNewFolderId">
-                            <span class="icon mr-2">{% inline "folder.svg" %}</span>
-                            <span class="text-truncate">{{ folder.title }}</span>
-                        </label>
-                    </div>
-                    <setting-field label="新文件夹" :draft="settingsDraft('create:newfolder', '')" @save="createSettingsFolder(null)"></setting-field>
-                    <label class="mt-3 d-block">内容方式</label>
-                    <div class="settings-segmented content-mode-picker">
-                        <label class="btn btn-link mb-0"
-                               :class="{active: feedNewContentMode == option.name}"
-                               v-for="option in contentModeOptions">
-                            <input type="radio" name="content_mode" :value="option.name" v-model="feedNewContentMode">
-                            {{ option.title }}
-                        </label>
-                    </div>
-                    <template v-if="feedNewContentMode == 'readability'">
-                        <label for="feed-content-selector" class="mt-3 d-block">正文选择器</label>
-                        <input id="feed-content-selector" name="content_selector" v-model="settingsNewSelector" type="text" class="form-control" autocomplete="off" placeholder=".content__default">
-                    </template>
-                    <label class="mt-3 d-block">榜单模式</label>
-                    <div class="settings-segmented content-mode-picker">
-                        <label class="btn btn-link mb-0"
-                               :class="{active: feedNewRankingMode == option.name}"
-                               v-for="option in rankingModeOptions">
-                            <input type="radio" name="ranking_mode" :value="option.name" v-model="feedNewRankingMode">
-                            {{ option.title }}
-                        </label>
-                    </div>
-                    <div class="mt-4" v-if="feedNewChoice.length">
-                        <p class="mb-2">
-                            找到多个订阅源，请选择一个：
-                            <a href="#" class="float-right text-decoration-none" @click.prevent="resetFeedChoice()">取消</a>
-                        </p>
-                        <label class="selectgroup" v-for="choice in feedNewChoice">
-                            <input type="radio" name="feedToAdd" :value="choice.url" v-model="feedNewChoiceSelected">
-                            <div class="selectgroup-label">
-                                <div class="text-truncate">{{ choice.title }}</div>
-                                <div class="text-truncate" :class="{light: choice.title}">{{ choice.url }}</div>
-                            </div>
-                        </label>
-                    </div>
-                    <div class="settings-actions">
-                        <button class="settings-btn settings-btn-primary" :class="{loading: loading.newfeed}" :disabled="loading.newfeed" type="submit">添加</button>
-                    </div>
-                </form>
             </div>
             <div v-else-if="settings=='deletefeeds'" class="settings-dialog">
 

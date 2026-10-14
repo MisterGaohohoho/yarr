@@ -44,7 +44,7 @@ var settingsMixin = {
       fontSizeMax: APP_FONT_SIZE_MAX,
       settingsClosing: false,
       settingsAuthLoaded: false,
-      settingsExpanded: {rsshubdetails: false, bilibili: false, auth: false},
+      settingsExpanded: {create: false, rsshubdetails: false, bilibili: false, auth: false},
     }
   },
   watch: {
@@ -84,7 +84,7 @@ var settingsMixin = {
     settingsTitle: function() {
       if (this.settings === 'feed') return this.settingsFeed ? this.settingsFeed.title : '订阅源设置'
       if (this.settings === 'folder') return this.settingsFolder ? this.settingsFolder.title : '文件夹设置'
-      return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源'}[this.settings] || '设置'
+      return {menu: '系统设置', deletefeeds: '删除订阅源'}[this.settings] || '设置'
     },
     settingsKey: function() {
       return this.settings + ':' + (this.settingsFeed ? this.settingsFeed.id : this.settingsFolder ? this.settingsFolder.id : '')
@@ -149,9 +149,6 @@ var settingsMixin = {
         this.settingsStack.push(this.settingsPage())
       }
       this.restoreSettingsPage({name: name, feedId: feed && feed.id, folderId: folder && folder.id})
-      if (name === 'create' && !this.settingsNewURL) {
-        this.feedNewFolderId = this.current.feed.folder_id || this.current.folder.id || null
-      }
       this.pushSettingsHistory()
     },
     toggleSettingsPanel: function(name) {
@@ -161,6 +158,9 @@ var settingsMixin = {
         if (name === 'bilibili') this.bilibiliCookieDraft = ''
         if (name === 'auth') this.settingsAuthLoaded = false
         return
+      }
+      if (name === 'create' && !this.settingsNewURL) {
+        this.feedNewFolderId = this.current.feed.folder_id || this.current.folder.id || null
       }
       if (name === 'auth') this.loadAuthConfig()
       if (name === 'bilibili') this.loadBilibiliConfig()

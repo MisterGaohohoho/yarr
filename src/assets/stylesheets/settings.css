@@ -418,6 +418,33 @@
   min-width: 0;
 }
 
+.settings-group > .settings-dialog-actions-inline > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.settings-group > .settings-dialog-actions-inline + .settings-accordion {
+  margin-top: .55rem;
+}
+
+.settings-accordion-panel .settings-row + .settings-row,
+.settings-accordion-panel .setting-field + .settings-row,
+.settings-accordion-panel .settings-row + .setting-field {
+  margin-top: 0;
+}
+
+.settings-feed-choices {
+  margin-top: .55rem;
+}
+
+.settings-feed-choices-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .35rem;
+  color: var(--settings-muted);
+  font-size: .8rem;
+}
+
 .settings-workspace .settings-dialog-action {
   display: flex;
   align-items: center;
@@ -778,6 +805,10 @@
   line-height: 1.5;
 }
 
+.settings-accordion-label-first {
+  margin-top: 0 !important;
+}
+
 .settings-accordion-label {
   display: block;
   margin: .55rem 0 .3rem;
@@ -857,7 +888,9 @@ input[type="radio"] {
   outline-offset: 2px;
 }
 
-.settings-workspace label:focus-within {
+/* labels wrapping a hidden radio/file input: ring only for keyboard focus,
+   not when the option is clicked with the mouse */
+.settings-workspace label:has(:focus-visible) {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }
