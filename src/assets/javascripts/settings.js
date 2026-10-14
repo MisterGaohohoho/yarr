@@ -39,7 +39,9 @@ var settingsMixin = {
       settingsAfterClose: null,
       settingsNewURL: '',
       settingsNewSelector: '',
-      settingsRSSHubDraft: null,
+      settingsRSSHubDraft: app.settings.rsshub_base_url || '',
+      fontSizeMin: APP_FONT_SIZE_MIN,
+      fontSizeMax: APP_FONT_SIZE_MAX,
       settingsClosing: false,
       settingsAuthLoaded: false,
     }
@@ -82,7 +84,7 @@ var settingsMixin = {
       if (this.settings === 'feed') return this.settingsFeed ? this.settingsFeed.title : '订阅源设置'
       if (this.settings === 'folder') return this.settingsFolder ? this.settingsFolder.title : '文件夹设置'
       return {menu: '系统设置', create: '新订阅源', deletefeeds: '删除订阅源', auth: '访问认证',
-        bilibili: 'Bilibili 关注视频', rsshub: 'RSSHub 基础链接列表', rsshubdetails: 'RSSHub 刷新详情', shortcuts: '键盘快捷键'}[this.settings] || '设置'
+        bilibili: 'Bilibili 关注视频', rsshubdetails: 'RSSHub 刷新详情', shortcuts: '键盘快捷键'}[this.settings] || '设置'
     },
     settingsKey: function() {
       return this.settings + ':' + (this.settingsFeed ? this.settingsFeed.id : this.settingsFolder ? this.settingsFolder.id : '')
@@ -96,7 +98,11 @@ var settingsMixin = {
       this.feedNewChoice = []
       this.feedNewChoiceSelected = ''
     },
-    normalizeFontSize: function(value) { return normalizeAppFontSize(value) },
+    stepFontSize: function(delta) {
+      var size = this.appFontSize + delta
+      if (size < APP_FONT_SIZE_MIN || size > APP_FONT_SIZE_MAX) return
+      this.saveBrowserSetting('appFontSize', size)
+    },
     saveBrowserSetting: function(name, value) {
       var target = {
         themeName: [this.theme, 'name', THEME_NAME_KEY],
@@ -146,7 +152,6 @@ var settingsMixin = {
       if (name === 'create' && !this.settingsNewURL) {
         this.feedNewFolderId = this.current.feed.folder_id || this.current.folder.id || null
       }
-      if (name === 'rsshub' && this.settingsRSSHubDraft === null) this.settingsRSSHubDraft = this.rsshubBaseUrl
       if (name === 'auth') this.loadAuthConfig()
       if (name === 'bilibili') this.loadBilibiliConfig()
       if (name === 'rsshubdetails') this.refreshStats()

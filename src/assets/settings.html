@@ -20,10 +20,11 @@
                             <button class="btn btn-link" :aria-pressed="theme.font == font.name" :class="{active: theme.font == font.name}" @click="saveBrowserSetting('themeFont', font.name)" v-for="font in fontOptions">{{ font.title }}</button>
                         </div>
                     </div>
-                    <div class="settings-row"><label for="settings-font-size">字体大小</label>
-                        <div class="settings-number-control">
-                            <input id="settings-font-size" class="form-control settings-number" type="number" min="10" max="30" :value="appFontSize" @change="saveBrowserSetting('appFontSize', normalizeFontSize($event.target.value)); $event.target.value = appFontSize">
-                            <span>px</span>
+                    <div class="settings-row"><span id="settings-font-size-label">字体大小</span>
+                        <div class="settings-stepper" role="group" aria-labelledby="settings-font-size-label">
+                            <button class="settings-stepper-button" type="button" aria-label="减小字体" :disabled="appFontSize <= fontSizeMin" @click="stepFontSize(-1)"><span class="icon" aria-hidden="true">{% inline "minus.svg" %}</span></button>
+                            <output class="settings-stepper-value" aria-live="polite">{{ appFontSize }}<span>px</span></output>
+                            <button class="settings-stepper-button" type="button" aria-label="增大字体" :disabled="appFontSize >= fontSizeMax" @click="stepFontSize(1)"><span class="icon" aria-hidden="true">{% inline "plus.svg" %}</span></button>
                         </div>
                     </div>
                     <div class="settings-row"><span>工具栏显示</span>
@@ -45,13 +46,12 @@
                             <button class="btn btn-link" :disabled="settingsPending.feed_sort" :aria-pressed="feedSort == option.name" :class="{active: feedSort == option.name}" @click="saveGlobalSetting('feedSort', 'feed_sort', option.name)" v-for="option in feedSortOptions">{{ option.title }}</button>
                         </div>
                     </div>
-                    <div class="settings-row"><label for="settings-read-items-keep-limit">每个订阅源已读保留上限</label>
+                    <div class="settings-row"><label for="settings-read-items-keep-limit">订阅源已读上限</label>
                         <div class="settings-number-control">
-                            <input id="settings-read-items-keep-limit" class="form-control settings-number" type="number" min="1" max="9007199254740991" step="1" v-model="readItemsKeepLimitDraft" :disabled="settingsPending.read_items_keep_limit" aria-describedby="settings-read-items-keep-limit-help" @keydown.enter.stop.prevent="saveReadItemsKeepLimit()">
+                            <input id="settings-read-items-keep-limit" class="form-control settings-number" type="number" min="1" max="9007199254740991" step="1" v-model="readItemsKeepLimitDraft" :disabled="settingsPending.read_items_keep_limit" @keydown.enter.stop.prevent="saveReadItemsKeepLimit()">
                             <button class="btn btn-default flex-shrink-0" :disabled="settingsPending.read_items_keep_limit" @click="saveReadItemsKeepLimit()">{{ settingsPending.read_items_keep_limit ? '保存中' : '保存' }}</button>
                         </div>
                     </div>
-                    <small id="settings-read-items-keep-limit-help" class="d-block text-muted mt-1">仅限制已读、未收藏文章，未读与收藏不计入上限。保存后清理超出的旧文章，并在启动时及每日清理。</small>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
                         <button class="settings-dialog-action" @click="showSettings('shortcuts')"><span class="icon mr-2">{% inline "help-circle.svg" %}</span>快捷键<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                     </div>
@@ -73,9 +73,16 @@
                 <section class="settings-group">
                     <h2><span class="icon" aria-hidden="true">{% inline "rss.svg" %}</span>RSSHub</h2>
                     <div class="settings-dialog-actions settings-dialog-actions-inline">
-                        <button class="settings-dialog-action" @click="showSettings('rsshub')"><span class="icon mr-2">{% inline "rss.svg" %}</span>基础链接列表<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                         <button class="settings-dialog-action" @click="showSettings('rsshubdetails')"><span class="icon mr-2">{% inline "list.svg" %}</span>刷新详情<span class="icon settings-action-chevron" aria-hidden="true">{% inline "chevron-right.svg" %}</span></button>
                     </div>
+                    <form class="settings-rsshub-base" @submit.prevent="updateRSSHubBaseUrl()">
+                        <label for="rsshub-base-url">基础链接列表</label>
+                        <textarea id="rsshub-base-url" name="rsshub_base_url" class="form-control" rows="4" autocomplete="off" spellcheck="false" v-model="settingsRSSHubDraft" placeholder="https://rsshub.rssforever.com&#10;#https://example.com"></textarea>
+                        <div class="settings-rsshub-base-actions" v-if="settingsRSSHubDraft !== rsshubBaseUrl">
+                            <button class="btn btn-link" :disabled="settingsPending.rsshub" type="button" @click="settingsRSSHubDraft = rsshubBaseUrl">取消</button>
+                            <button class="btn btn-default" :disabled="settingsPending.rsshub" type="submit">{{ settingsPending.rsshub ? '保存中' : '保存' }}</button>
+                        </div>
+                    </form>
                     <setting-field label="Bilibili UID" :draft="settingsDraft('rsshub:bilibili', '')" @save="createRSSHubFeed('bilibili')" placeholder="UID 或空间链接"></setting-field>
                     <setting-field label="Telegram" :draft="settingsDraft('rsshub:telegram', '')" @save="createRSSHubFeed('telegram')" placeholder="频道 ID 或 t.me 链接"></setting-field>
                 </section>
@@ -344,14 +351,6 @@
                         <input id="auth-password" name="password" type="password" class="form-control" required autocomplete="new-password" v-model="authForm.password">
                     </template>
                     <button class="btn btn-default mt-3" :disabled="settingsPending.auth || settingsPending['auth-load']" type="submit">保存</button>
-                </form>
-            </div>
-            <div v-else-if="settings=='rsshub'">
-
-                <form action="" @submit.prevent="updateRSSHubBaseUrl()" class="mt-4">
-                    <label for="rsshub-base-url">RSSHub 基础链接列表</label>
-                    <textarea id="rsshub-base-url" name="rsshub_base_url" class="form-control" rows="5" autocomplete="off" v-model="settingsRSSHubDraft" placeholder="https://rsshub.rssforever.com&#10;#https://example.com" v-focus></textarea>
-                    <button class="btn btn-default mt-3" :disabled="settingsPending.rsshub" type="submit">保存</button><button class="btn btn-link mt-3" :disabled="settingsPending.rsshub" type="button" @click="settingsRSSHubDraft = rsshubBaseUrl">取消</button>
                 </form>
             </div>
             <div v-else-if="settings=='rsshubdetails'" class="settings-dialog">

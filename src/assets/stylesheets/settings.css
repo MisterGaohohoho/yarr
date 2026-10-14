@@ -121,6 +121,106 @@
   font-size: 0.78rem;
 }
 
+/* ── Stepper (− value +) ── */
+
+.settings-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  width: max-content;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  overflow: hidden;
+}
+
+.settings-stepper-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  min-height: 1.95rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color .1s ease, color .1s ease;
+}
+
+.settings-stepper-button .icon,
+.settings-stepper-button .icon > svg {
+  width: .85rem;
+  height: .85rem;
+}
+
+/* drop bootstrap's mouse-click focus ring; keyboard focus still uses #app :focus-visible */
+.settings-stepper-button:focus {
+  outline: none;
+}
+
+.settings-stepper-button:hover:not(:disabled) {
+  background: var(--settings-tint);
+  color: var(--accent-color);
+}
+
+.settings-stepper-value {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .1rem;
+  min-width: 3.25rem;
+  padding: 0 .4rem;
+  align-self: center;
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--settings-line);
+  border-right: 1px solid var(--settings-line);
+  line-height: 1.95rem;
+}
+
+.settings-stepper-value span {
+  color: var(--settings-muted);
+  font-size: .75rem;
+}
+
+/* ── RSSHub base URLs (inline in menu) ── */
+
+.settings-rsshub-base {
+  margin-top: .65rem;
+}
+
+.settings-rsshub-base label {
+  display: block;
+  font-size: .875rem;
+  color: var(--settings-muted);
+  margin-bottom: .35rem;
+}
+
+.settings-rsshub-base textarea {
+  font-size: .85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.settings-rsshub-base-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .35rem;
+  margin-top: .4rem;
+}
+
+.settings-rsshub-base-actions .btn {
+  font-size: .83rem;
+  padding: .25rem .65rem;
+}
+
+.settings-rsshub-base-actions .btn-default {
+  background: var(--accent-color) !important;
+  color: var(--accent-contrast-color) !important;
+  border-color: var(--accent-color);
+}
+
 /* ── Toggle (checkbox) ── */
 
 .settings-workspace #settings-backup {
