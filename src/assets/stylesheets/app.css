@@ -1466,11 +1466,15 @@ hr {
   }
 }
 
+/* same rule as item-list cards: fixed 16:9 frame, image cropped to fill, so
+   very tall or very wide covers don't change the card height */
 .content .bilibili-ranking-image {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   margin: 0;
 }
 
