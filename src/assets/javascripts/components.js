@@ -131,15 +131,17 @@ Vue.component('drag', {
 Vue.component('modal', {
   props: ['open'],
   template: `
-    <div class="modal custom-modal" tabindex="-1" role="dialog" aria-modal="true" aria-label="确认操作" v-if="$props.open" @keydown="handleKey">
-      <div class="modal-dialog">
-        <div class="modal-content" ref="content">
-          <div class="modal-body">
-            <slot v-if="$props.open"></slot>
+    <transition name="modal">
+      <div class="modal custom-modal" tabindex="-1" role="dialog" aria-modal="true" aria-label="确认操作" v-if="$props.open" @keydown="handleKey">
+        <div class="modal-dialog">
+          <div class="modal-content" ref="content">
+            <div class="modal-body">
+              <slot></slot>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </transition>
   `,
   data: function() {
     return {opening: false, returnFocus: null}
@@ -154,8 +156,9 @@ Vue.component('modal', {
         this.returnFocus = document.activeElement
         document.addEventListener('click', this.handleClick)
         this.$nextTick(function() {
-          var button = this.$el.querySelector('button')
-          if (button) button.focus()
+          // keep keyboard access but don't paint a focus ring until the user tabs
+          var button = this.$el.querySelector && this.$el.querySelector('button')
+          if (button) button.focus({focusVisible: false})
         })
       } else {
         document.removeEventListener('click', this.handleClick)

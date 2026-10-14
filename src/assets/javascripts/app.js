@@ -913,11 +913,12 @@ var vm = new Vue({
     refreshItems: function(loadMore = false) {
       var requestSeq = ++this.itemsRequestSeq
       if (this.feedSelected === null) {
-        vm.items = []
-        vm.itemsHasMore = false
-        vm.itemsCursor = null
-        vm.loading.items = false
-        vm.resetItemListAutoRead()
+        // `this`, not `vm`: this branch also runs from created(), before vm is assigned
+        this.items = []
+        this.itemsHasMore = false
+        this.itemsCursor = null
+        this.loading.items = false
+        this.resetItemListAutoRead()
         return
       }
 

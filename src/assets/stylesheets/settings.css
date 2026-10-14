@@ -1,10 +1,6 @@
-.settings-workspace {
-  container: settings / inline-size;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
+/* shared control tokens: also used by .settings-btn in the article footer and
+   the confirmation modal, which live outside .settings-workspace */
+#app {
   --settings-line: color-mix(in srgb, currentColor 10%, transparent);
   --settings-muted: color-mix(in srgb, currentColor 55%, transparent);
   --settings-tint: color-mix(
@@ -12,8 +8,17 @@
     var(--accent-color) 7%,
     var(--toolbar-bg)
   );
-  --settings-label-width: 7.5rem;
   --settings-control-height: 1.9rem;
+}
+
+.settings-workspace {
+  container: settings / inline-size;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  --settings-label-width: 7.5rem;
   background: var(--toolbar-bg);
 }
 
@@ -525,31 +530,95 @@
 }
 
 .feed-delete-group {
-  margin-bottom: 0.65rem;
+  margin-top: .9rem;
 }
 
 .feed-delete-group header {
-  font-size: 0.78rem;
-  font-weight: 700;
-  margin-bottom: 0.2rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.6;
+  margin-bottom: .35rem;
+  color: var(--settings-muted);
+  font-size: .78rem;
+  font-weight: 600;
 }
 
-.feed-delete-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
+.settings-workspace .feed-delete-row {
+  min-height: 2.6rem;
+  margin: 0;
+  padding: .35rem .7rem;
+  gap: .6rem;
   cursor: pointer;
-  border-radius: var(--radius-sm);
   transition: background-color .1s ease;
 }
 
+.settings-workspace .feed-delete-row:hover {
+  background: var(--settings-tint);
+}
+
+.settings-workspace .feed-delete-row.selected {
+  background: color-mix(in srgb, #c0392b 6%, transparent);
+}
+
+.feed-delete-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  opacity: .85;
+}
+
+.feed-delete-icon img,
+.feed-delete-icon .icon,
+.feed-delete-icon .icon > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 .feed-delete-title {
+  flex: 1;
   min-width: 0;
+  font-size: .875rem;
   overflow-wrap: anywhere;
+}
+
+.feed-delete-row input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #c0392b;
+  cursor: pointer;
+}
+
+.feed-delete-actions {
+  position: sticky;
+  bottom: -2rem;
+  align-items: center;
+  margin-top: .9rem;
+  padding: .6rem 0;
+  background: var(--toolbar-bg);
+}
+
+.feed-delete-count {
+  margin-right: auto;
+  color: var(--settings-muted);
+  font-size: .8rem;
+}
+
+/* read-only value fields: plain text aligned with editable fields; links accent */
+.settings-workspace a.settings-dialog-field-action .settings-dialog-field-value {
+  color: var(--accent-color);
+}
+
+.settings-workspace a.settings-dialog-field-action:hover {
+  background: transparent !important;
+}
+
+.settings-workspace a.settings-dialog-field-action:hover .settings-dialog-field-value {
+  opacity: .8;
+}
+
+.settings-workspace .settings-dialog-field-disabled .settings-dialog-field-value,
+.settings-workspace a.settings-dialog-field-action .settings-dialog-field-value {
+  padding: 0 .55rem;
 }
 
 /* ── Refresh status bar ── */
@@ -589,8 +658,33 @@
   opacity: 0.75;
 }
 
+.dialog-title {
+  margin: 0 0 .5rem;
+  font-size: .95rem;
+  font-weight: 600;
+}
+
 .dialog-message {
+  margin: 0;
+  font-size: .875rem;
+  line-height: 1.55;
   white-space: pre-wrap;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+.dialog-actions {
+  margin-top: 1.1rem;
+}
+
+.settings-btn.settings-btn-danger-solid {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+.settings-btn.settings-btn-danger-solid:hover:not(:disabled) {
+  background: #c0392b;
+  opacity: .88;
 }
 
 /* ── Form controls in settings ── */
@@ -677,6 +771,11 @@
 
 .settings-btn.loading {
   color: transparent !important;
+}
+
+.settings-btn:disabled {
+  opacity: .45;
+  cursor: default;
 }
 
 .settings-actions {
