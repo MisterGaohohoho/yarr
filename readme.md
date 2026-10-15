@@ -433,6 +433,10 @@ make        # 运行测试并构建当前平台二进制
 - [设计说明](doc/rationale.txt)
 - [更新记录](doc/changelog.md)
 
+## 社区
+
+欢迎加入 [LINUX DO](https://linux.do) 社区，一个「新的理想型社区」。
+
 ## 致谢
 
 界面图标来自 [Feather](https://feathericons.com/)。
