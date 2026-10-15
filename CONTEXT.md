@@ -168,6 +168,10 @@ _Avoid_: 霞鹭文楷, LXGW WenKai
 A **字体显示** option using the Noto Sans CJK sans-serif font.
 _Avoid_: Noto Sans CJK
 
+**源泉圆体**:
+A **字体显示** option using the GenSenRounded2 TC rounded font.
+_Avoid_: GenSenRounded2 TC
+
 **仅图标**:
 A compact toolbar display mode where top-level toolbar actions show only their icon.
 _Avoid_: 图标模式, 紧凑模式
@@ -408,7 +412,7 @@ _Avoid_: Sticky folder, 固定文件夹
 - When the **订阅源** list toolbar becomes narrow, the create **订阅源** action hides before the refresh **订阅源** action.
 - Each **主题** has one **主题强调色**.
 - **字体显示** applies globally to yarr's interface and article reading surface.
-- **字体显示** can be **霞鹜文楷** or **思源黑体**.
+- **字体显示** can be **霞鹜文楷**, **思源黑体**, or **源泉圆体**.
 - **霞鹜文楷** is the default **字体显示** option.
 - **字体显示** is changed from the main settings menu, near **主题**.
 - Some compact top-level toolbar actions remain icon-only regardless of **工具栏显示**.

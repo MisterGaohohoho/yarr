@@ -179,6 +179,7 @@ function isDesktopLayout() {
 var FONT_OPTIONS = [
   {name: 'lxgw-wenkai', title: '霞鹜文楷'},
   {name: 'noto-sans-cjk', title: '思源黑体'},
+  {name: 'gensen-rounded2-tc', title: '源泉圆体'},
 ]
 
 var CONTENT_MODE_OPTIONS = [

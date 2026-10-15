@@ -236,6 +236,31 @@ test('Noto Sans CJK replaces Maple and preserves the font preference across relo
   await close(p)
 })
 
+test('GenSenRounded2 TC is available and its selection persists on desktop and mobile', async () => {
+  const p = await page()
+  for (const width of [1440, 390]) {
+    await p.setViewportSize({width, height: 900})
+    await p.waitForFunction(width => vm.mobileLayout === (width < 768), width)
+    await p.evaluate(() => vm.showFeedList())
+    await p.waitForFunction(() => vm.feedSelected === null && vm.layerSlide === '')
+    await system(p)
+    for (const name of ['霞鹜文楷', '思源黑体', '源泉圆体']) {
+      assert.equal(await p.getByRole('button', {name, exact: true}).isVisible(), true)
+    }
+    await p.getByRole('button', {name: '源泉圆体', exact: true}).click()
+    assert.equal(await p.evaluate(() => vm.theme.font), 'gensen-rounded2-tc')
+    assert.equal(await p.locator('body').evaluate(el => getComputedStyle(el).fontFamily.split(',')[0]), '"GenSenRounded2 TC"')
+    assert.equal(await p.locator('body').evaluate(el => getComputedStyle(el).fontWeight), '400')
+    assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem('yarr.themeFont.v1'))), 'gensen-rounded2-tc')
+    assert.equal(await p.locator('link[href="https://fontsapi.zeoseven.com/303/main/result.css"]').count(), 1)
+    await p.reload()
+    await p.waitForFunction(() => window.vm)
+    assert.equal(await p.evaluate(() => vm.theme.font), 'gensen-rounded2-tc')
+    assert.equal(await p.locator('body').evaluate(el => getComputedStyle(el).fontFamily.split(',')[0]), '"GenSenRounded2 TC"')
+  }
+  await close(p)
+})
+
 test('browser preference failures retain the previous theme and font size', async () => {
   const p = await page()
   await system(p)
