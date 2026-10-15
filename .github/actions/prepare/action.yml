@@ -1,4 +1,5 @@
 name: Build & Upload
+description: Build a release target and upload its tar archive.
 inputs:
   id:
     description: artifact name
@@ -23,3 +24,4 @@ runs:
       with:
         name: ${{ inputs.id }}
         path: ${{ inputs.out }}.tar
+        if-no-files-found: error

@@ -32,6 +32,19 @@ Compile:
     # ... or build a docker image
     docker build -t yarr -f etc/dockerfile .
 
+## Release builds
+
+Pushing a `v*` tag triggers the Build workflow, which builds and uploads ZIP
+archives to the GitHub Release for that tag:
+
+* macOS arm64 and amd64: GUI (`yarr.app`) and CLI
+* Windows amd64: GUI (`yarr.exe`) and CLI
+* Windows arm64 and Linux amd64, arm64, and armv7: CLI
+
+GUI archives use the `yarr_<os>_<arch>_gui.zip` naming convention. Windows arm64
+GUI is not built, matching upstream. Manual workflow runs on branches build
+artifacts without publishing a Release; select a `v*` tag to publish a Release.
+
 ## ARM compilation
 
 The instructions below are to cross-compile *yarr* to `Linux/ARM*`.
