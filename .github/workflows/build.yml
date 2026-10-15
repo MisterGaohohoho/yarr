@@ -68,8 +68,17 @@ jobs:
         out: out/windows_amd64_gui/yarr.exe
 
   build_multi_cli:
-    name: Build for Windows/Linux CLI
+    name: Build CLI (${{ matrix.target }})
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - linux_amd64
+          - linux_arm64
+          - linux_armv7
+          - windows_amd64
+          - windows_arm64
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -81,36 +90,12 @@ jobs:
       uses: mlugg/setup-zig@v1
       with:
         version: 0.14.0
-    - name: Build linux/amd64
+    - name: Build CLI
       uses: ./.github/actions/prepare
       with:
-        id: linux_amd64
-        cmd: make linux_amd64
-        out: out/linux_amd64/yarr
-    - name: Build linux/arm64
-      uses: ./.github/actions/prepare
-      with:
-        id: linux_arm64
-        cmd: make linux_arm64
-        out: out/linux_arm64/yarr
-    - name: Build linux/armv7
-      uses: ./.github/actions/prepare
-      with:
-        id: linux_armv7
-        cmd: make linux_armv7
-        out: out/linux_armv7/yarr
-    - name: Build windows/amd64
-      uses: ./.github/actions/prepare
-      with:
-        id: windows_amd64
-        cmd: make windows_amd64
-        out: out/windows_amd64/yarr
-    - name: Build windows/arm64
-      uses: ./.github/actions/prepare
-      with:
-        id: windows_arm64
-        cmd: make windows_arm64
-        out: out/windows_arm64/yarr
+        id: ${{ matrix.target }}
+        cmd: make ${{ matrix.target }}
+        out: out/${{ matrix.target }}/yarr
 
   create_release:
     name: Create Release
