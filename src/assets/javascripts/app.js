@@ -178,7 +178,7 @@ function isDesktopLayout() {
 
 var FONT_OPTIONS = [
   {name: 'lxgw-wenkai', title: '霞鹜文楷'},
-  {name: 'maple-mono-nf-cn', title: 'Maple Mono NF-CN'},
+  {name: 'noto-sans-cjk', title: '思源黑体'},
 ]
 
 var CONTENT_MODE_OPTIONS = [
@@ -196,6 +196,7 @@ var FEED_SORT_OPTIONS = [
 var STATUS_POLL_INTERVAL = 10000
 
 function normalizeThemeFont(font) {
+  if (font == 'maple-mono-nf-cn') return 'noto-sans-cjk'
   return FONT_OPTIONS.some(function(option) { return option.name == font }) ? font : 'lxgw-wenkai'
 }
 

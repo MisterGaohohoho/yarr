@@ -164,9 +164,9 @@ _Avoid_: 字体切换, 正文字体
 The default **字体显示** option for yarr.
 _Avoid_: 霞鹭文楷, LXGW WenKai
 
-**Maple Mono NF-CN**:
-A **字体显示** option for users who prefer a monospaced interface font.
-_Avoid_: Maple Mono NF CN
+**思源黑体**:
+A **字体显示** option using the Noto Sans CJK sans-serif font.
+_Avoid_: Noto Sans CJK
 
 **仅图标**:
 A compact toolbar display mode where top-level toolbar actions show only their icon.
@@ -408,7 +408,7 @@ _Avoid_: Sticky folder, 固定文件夹
 - When the **订阅源** list toolbar becomes narrow, the create **订阅源** action hides before the refresh **订阅源** action.
 - Each **主题** has one **主题强调色**.
 - **字体显示** applies globally to yarr's interface and article reading surface.
-- **字体显示** can be **霞鹜文楷** or **Maple Mono NF-CN**.
+- **字体显示** can be **霞鹜文楷** or **思源黑体**.
 - **霞鹜文楷** is the default **字体显示** option.
 - **字体显示** is changed from the main settings menu, near **主题**.
 - Some compact top-level toolbar actions remain icon-only regardless of **工具栏显示**.
