@@ -177,6 +177,42 @@ test('failed global saves retain the saved value; successful saves persist', asy
   await close(p)
 })
 
+test('article media stays responsive while only ranking cover previews are cropped', async () => {
+  const p = await page(390)
+  const portrait = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="400"><rect width="200" height="400" fill="green"/></svg>')
+  const player = 'https://www.bilibili.com/blackboard/html5mobileplayer.html?aid=20'
+  const content = `<img id="plain-image" src="${portrait}">
+    <iframe id="plain-video" width="640" height="360" src="${player}" frameborder="0"></iframe>
+    <article class="bilibili-ranking-card">
+      <a class="bilibili-ranking-link"><img id="ranking-cover" class="bilibili-ranking-image" src="${portrait}"></a>
+      <div class="bilibili-ranking-body"><details open><summary>Ranking entry</summary>
+        <div class="bilibili-ranking-content">
+          <img id="expanded-image" class="bilibili-ranking-image" src="${portrait}">
+          <iframe id="expanded-video" width="640" height="360" src="${player}" frameborder="0"></iframe>
+        </div>
+      </details></div>
+    </article>`
+  await p.route(player, route => route.fulfill({contentType: 'text/html', body: '<html><body>Video player fixture</body></html>'}))
+  await p.route('**/api/items/' + items[0].id, route => route.fulfill({json: {...items[0], content}}))
+  await p.evaluate(id => { vm.itemSelected = id }, items[0].id)
+  await p.waitForFunction(() => vm.itemSelectedDetails && vm.layerSlide === '' && Array.from(document.querySelectorAll('.content img')).every(img => img.complete && img.naturalWidth))
+  for (const width of [390, 1440]) {
+    await p.setViewportSize({width, height: 900})
+    await p.waitForFunction(width => vm.mobileLayout === (width < 768), width)
+    const metrics = await p.locator('#plain-image, #plain-video, #ranking-cover, #expanded-image, #expanded-video').evaluateAll(elements => elements.map(el => {
+      const rect = el.getBoundingClientRect()
+      return {id: el.id, ratio: rect.width / rect.height, width: rect.width, available: el.parentElement.clientWidth, border: getComputedStyle(el).borderWidth}
+    }))
+    for (const media of metrics) {
+      const ratio = ['plain-image', 'expanded-image'].includes(media.id) ? 1 / 2 : 16 / 9
+      assert.ok(Math.abs(media.ratio - ratio) < .02, `${width}px ${media.id}: expected ${ratio}, got ${media.ratio}`)
+      assert.ok(media.width <= media.available + 1, `${media.id} overflows its container`)
+      if (media.id.endsWith('video')) assert.equal(media.border, '0px')
+    }
+  }
+  await close(p)
+})
+
 test('Noto Sans CJK replaces Maple and preserves the font preference across reloads', async () => {
   const p = await page()
   await p.evaluate(() => localStorage.setItem('yarr.themeFont.v1', JSON.stringify('maple-mono-nf-cn')))

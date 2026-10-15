@@ -1352,6 +1352,12 @@ hr {
   margin-bottom: 0.5rem;
 }
 
+.content iframe[src^="https://www.bilibili.com/blackboard/html5mobileplayer.html"] {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
 .content .video-wrapper {
   position: relative;
   display: block;
@@ -1465,16 +1471,18 @@ hr {
   }
 }
 
-/* same rule as item-list cards: fixed 16:9 frame, image cropped to fill, so
-   very tall or very wide covers don't change the card height */
 .content .bilibili-ranking-image {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
+  margin: 0;
+}
+
+/* Only the card's cover preview is cropped; expanded article media keeps its ratio. */
+.content .bilibili-ranking-card > .bilibili-ranking-link > .bilibili-ranking-image {
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  margin: 0;
 }
 
 .content .bilibili-ranking-body {
