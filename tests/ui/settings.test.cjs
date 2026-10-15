@@ -247,6 +247,15 @@ test('GenSenRounded2 TC is available and its selection persists on desktop and m
     for (const name of ['霞鹜文楷', '思源黑体', '源泉圆体']) {
       assert.equal(await p.getByRole('button', {name, exact: true}).isVisible(), true)
     }
+    const buttons = await p.locator('.font-picker > button').evaluateAll(elements => elements.map(el => {
+      const rect = el.getBoundingClientRect()
+      return {top: rect.top, width: rect.width}
+    }))
+    assert.equal(buttons.length, 3)
+    for (const button of buttons) {
+      assert.ok(Math.abs(button.top - buttons[0].top) < 1, `${width}px font options must share a row`)
+      assert.ok(Math.abs(button.width - buttons[0].width) < 1, `${width}px font options must have equal widths`)
+    }
     await p.getByRole('button', {name: '源泉圆体', exact: true}).click()
     assert.equal(await p.evaluate(() => vm.theme.font), 'gensen-rounded2-tc')
     assert.equal(await p.locator('body').evaluate(el => getComputedStyle(el).fontFamily.split(',')[0]), '"GenSenRounded2 TC"')

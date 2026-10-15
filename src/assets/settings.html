@@ -22,7 +22,7 @@
                         </div>
                     </div>
                     <div class="settings-row"><span>字体显示</span>
-                        <div class="settings-segmented">
+                        <div class="settings-segmented font-picker">
                             <button class="btn btn-link" :aria-pressed="theme.font == font.name" :class="{active: theme.font == font.name}" @click="saveBrowserSetting('themeFont', font.name)" v-for="font in fontOptions">{{ font.title }}</button>
                         </div>
                     </div>
