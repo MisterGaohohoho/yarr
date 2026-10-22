@@ -213,8 +213,11 @@ A known service-added phrase at the end of a subscription source title that does
 _Avoid_: Title suffix, Feed title suffix
 
 **文件夹设置**:
-A group of actions for one folder, including renaming and deleting it.
+A group of actions for one folder, including renaming, deleting, and bulk reading settings for the folder and its subscription sources.
 _Avoid_: Folder settings
+
+**全部订阅源设置**:
+A dedicated settings page for bulk reading preferences across the all-sources view, every existing folder, and every subscription source.
 
 **卡片模式**:
 A variable-height article list layout where articles with thumbnails show the thumbnail above the title and articles without thumbnails show as text-only cards.
@@ -361,7 +364,8 @@ _Avoid_: Sticky folder, 固定文件夹
 - A selection with no remembered **文章列表布局** uses **列表模式**.
 - Existing server-side **文章列表布局** values are not migrated into browser-local memory.
 - Switching between **全部**, **订阅源**, and **文件夹** selections immediately applies that selection's remembered **文章列表布局**.
-- Changing **文章列表布局** updates only the current selection's browser-local memory.
+- The article list toolbar's **文章列表布局** toggle updates only the current selection's browser-local memory.
+- Bulk layout actions in **文件夹设置** update the folder and its current **订阅源** together; **全部订阅源设置** updates every existing folder and subscription source plus **全部**. These actions remain browser-local and do not introduce inheritance for new or moved subscriptions.
 - A **订阅源** without remembered **文章列表布局** does not inherit the remembered **文章列表布局** of its **文件夹**.
 - Browser-local **文章列表布局** memory is not actively cleared when a **订阅源** or **文件夹** is deleted.
 - **卡片模式** presents **文章** as a single-column card flow.
@@ -424,10 +428,11 @@ _Avoid_: Sticky folder, 固定文件夹
 - In **基础设置**, only an HTTP(S) **订阅链接** can be opened directly; an **RSSHub 订阅链接** is not opened from the row label.
 - In **基础设置**, an empty link value cannot be opened from the row label.
 - **文件夹设置** is opened from the current selection's settings action in the article list toolbar.
+- **全部订阅源设置** is opened from the same toolbar for **全部** and is separate from system settings. Both it and **文件夹设置** offer bulk layout, unread-first, and scroll-auto-read actions. Server-backed bulk settings update their entire scope in one transaction, including the all-sources preference for global actions. Enabling scroll-auto-read changes the preference without immediately marking articles read.
 - System settings, **订阅源设置**, **文件夹设置**, and their child settings replace the visible **文章详情** surface, not the reader's selected article state.
 - Settings use one vertically grouped page inside the existing detail column; they do not add a navigation column or use a large modal.
 - Closing settings restores the selected article, content mode, and scroll position. Selecting an article, including the already selected article, closes settings.
-- Changing the subscription list scope while settings are open does not change the object being edited.
+- Changing the subscription list scope while source settings are open follows the selected **订阅源**, **文件夹**, or **全部订阅源设置**; system settings retain the existing selection-following behavior, while child settings pages stay open. Object-keyed drafts remain available when returning to a source.
 - Settings subpages return to their parent and restore its scroll position. In **移动端视图**, browser Back follows the same hierarchy without changing the address bar.
 - Text fields are edited inline with Save and Cancel. Unsaved drafts are retained by object for the current page session, not across a browser reload. Passwords are never persisted by the frontend.
 - Theme and option changes do not require a page-wide Save. Failed server writes keep the last saved value and show feedback inside settings.

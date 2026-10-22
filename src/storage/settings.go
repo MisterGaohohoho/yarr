@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 
@@ -186,4 +187,42 @@ func (s *Storage) UpdateSettings(kv map[string]interface{}) bool {
 		}
 	}
 	return true
+}
+
+// BulkUpdateReadingSetting updates existing scopes without changing creation defaults.
+func (s *Storage) BulkUpdateReadingSetting(folderID *int64, field string, value bool) error {
+	if field != "unread_first" && field != "auto_read_scroll" {
+		return fmt.Errorf("unsupported reading setting: %s", field)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	folderWhere, feedWhere := "", ""
+	args := []interface{}{value}
+	if folderID != nil {
+		var id int64
+		if err := tx.QueryRow(`select id from folders where id = ?`, *folderID).Scan(&id); err != nil {
+			return err
+		}
+		folderWhere, feedWhere = " where id = ?", " where folder_id = ?"
+		args = append(args, *folderID)
+	}
+	// field is restricted to the two columns above; values and IDs stay bound.
+	if _, err := tx.Exec(`update folders set `+field+` = ?`+folderWhere, args...); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`update feeds set `+field+` = ?`+feedWhere, args...); err != nil {
+		return err
+	}
+	if folderID == nil {
+		encoded, _ := json.Marshal(value)
+		if _, err := tx.Exec(`insert into settings (key, val) values (?, ?)
+			on conflict (key) do update set val = excluded.val`, field, encoded); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

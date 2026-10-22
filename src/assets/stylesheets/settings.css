@@ -546,6 +546,42 @@
   flex: 0 0 auto;
 }
 
+.settings-bulk-description {
+  color: var(--settings-muted);
+  font-size: .8rem;
+}
+
+.settings-bulk-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35rem;
+  margin-top: .55rem;
+}
+
+.settings-bulk .settings-dialog-action {
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+  transition: background-color .1s ease, border-color .1s ease, transform .1s ease;
+}
+
+.settings-bulk .settings-dialog-action:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.settings-bulk .settings-dialog-action:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-bulk .settings-dialog-action,
+  .settings-bulk .settings-dialog-action:active:not(:disabled) {
+    transition: none;
+    transform: none;
+  }
+}
+
 /* ── Delete feeds list ── */
 
 .settings-workspace .feed-delete-list {
@@ -1153,6 +1189,9 @@ input[type="radio"] {
 }
 
 @container settings (max-width: 32em) {
+  .settings-bulk-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .settings-row,
   .settings-workspace .settings-dialog-field {
     grid-template-columns: minmax(0, 1fr);

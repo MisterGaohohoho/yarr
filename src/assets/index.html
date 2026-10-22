@@ -134,9 +134,9 @@
                     <span class="icon toolbar-icon">{% inline "chevron-left.svg" %}</span>
                 </button>
                 <button class="toolbar-item toolbar-item-icon-only item-list-selection-settings mr-1"
-                        v-if="(current.type == 'feed' && current.feed.id) || (current.type == 'folder' && current.folder.id)"
-                        :aria-label="current.type == 'folder' ? '文件夹设置' : '订阅源设置'"
-                        :title="current.type == 'folder' ? '文件夹设置' : '订阅源设置'"
+                        v-if="feedSelected === '' || (current.type == 'feed' && current.feed.id) || (current.type == 'folder' && current.folder.id)"
+                        :aria-label="current.type == 'folder' ? '文件夹设置' : current.type == 'feed' ? '订阅源设置' : '全部订阅源设置'"
+                        :title="current.type == 'folder' ? '文件夹设置' : current.type == 'feed' ? '订阅源设置' : '全部订阅源设置'"
                         @click="showCurrentSettings()">
                     <span class="icon toolbar-icon">{% inline "more-horizontal.svg" %}</span>
                 </button>

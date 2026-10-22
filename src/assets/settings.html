@@ -417,15 +417,24 @@
 
             </div>
             <div v-else-if="settings=='folder' && settingsFolder" :key="'folder:' + settingsFolder.id" class="settings-dialog">
-
-
                 <div class="settings-dialog-actions mt-3">
-                    <setting-field label="名称" :value="settingsFolder.title" :draft="settingsDraft('folder:' + settingsFolder.id + ':title', settingsFolder.title)" @save="saveTextSetting('folder', settingsFolder, 'title')"></setting-field>
                     <button class="settings-dialog-action text-danger" @click="deleteFolder(settingsFolder)">
-                        <span class="icon mr-2">{% inline "trash.svg" %}</span>
+                        <span class="icon mr-2" aria-hidden="true">{% inline "trash.svg" %}</span>
                         删除
                     </button>
                 </div>
+                <hr>
+                <section class="settings-dialog-section">
+                    <header>基础设置</header>
+                    <div class="settings-dialog-fields">
+                        <setting-field label="名称" :value="settingsFolder.title" :draft="settingsDraft('folder:' + settingsFolder.id + ':title', settingsFolder.title)" @save="saveTextSetting('folder', settingsFolder, 'title')"></setting-field>
+                    </div>
+                </section>
+                <hr>
+                {% template "bulk-reading-settings" . %}
+            </div>
+            <div v-else-if="settings=='allfeeds'" key="allfeeds" class="settings-dialog">
+                {% template "bulk-reading-settings" . %}
             </div>
             <div v-else-if="settings=='deletefeeds'" key="deletefeeds" class="settings-dialog">
 
@@ -465,6 +474,37 @@
                 <span class="text-truncate cursor-default noselect">正在刷新（剩余 {{ loading.feeds }} 个）</span>
             </div>
 
+    </div>
+</section>
+{% end %}
+
+{% define "bulk-reading-settings" %}
+<section class="settings-dialog-section settings-bulk">
+    <header>批量设置</header>
+    <p class="settings-bulk-description">{{ settingsFolder ? '应用于此文件夹及其下所有订阅源' : '应用于全部订阅源视图、所有文件夹和订阅源' }}</p>
+    <div class="settings-bulk-pair" role="group" aria-label="文章列表布局">
+        <button class="btn settings-dialog-action" :disabled="settingsPending.bulk" @click="saveBulkSetting('layout', 'list')">
+            <span class="icon" aria-hidden="true">{% inline "list.svg" %}</span>全部切换列表模式
+        </button>
+        <button class="btn settings-dialog-action" :disabled="settingsPending.bulk" @click="saveBulkSetting('layout', 'card')">
+            <span class="icon" aria-hidden="true">{% inline "grid.svg" %}</span>全部切换卡片模式
+        </button>
+    </div>
+    <div class="settings-bulk-pair" role="group" aria-label="未读优先">
+        <button class="btn settings-dialog-action" :disabled="settingsPending.bulk" @click="saveBulkSetting('unread_first', true)">
+            <span class="icon" aria-hidden="true">{% inline "circle-full.svg" %}</span>全部启用未读优先
+        </button>
+        <button class="btn settings-dialog-action" :disabled="settingsPending.bulk" @click="saveBulkSetting('unread_first', false)">
+            <span class="icon" aria-hidden="true">{% inline "circle.svg" %}</span>全部关闭未读优先
+        </button>
+    </div>
+    <div class="settings-bulk-pair" role="group" aria-label="滚动自动标为已读">
+        <button class="btn settings-dialog-action" :disabled="settingsPending.bulk" @click="saveBulkSetting('auto_read_scroll', true)">
+            <span class="icon" aria-hidden="true">{% inline "scroll-check.svg" %}</span>全部启用自动标为已读
+        </button>
+        <button class="btn settings-dialog-action" :disabled="settingsPending.bulk" @click="saveBulkSetting('auto_read_scroll', false)">
+            <span class="icon" aria-hidden="true">{% inline "scroll-x.svg" %}</span>全部关闭自动标为已读
+        </button>
     </div>
 </section>
 {% end %}

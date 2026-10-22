@@ -86,7 +86,7 @@ var settingsMixin = {
     settingsTitle: function() {
       if (this.settings === 'feed') return this.settingsFeed ? this.settingsFeed.title : '订阅源设置'
       if (this.settings === 'folder') return this.settingsFolder ? this.settingsFolder.title : '文件夹设置'
-      return {menu: '系统设置', deletefeeds: '删除订阅源'}[this.settings] || '设置'
+      return {menu: '系统设置', allfeeds: '全部订阅源设置', deletefeeds: '删除订阅源'}[this.settings] || '设置'
     },
     settingsKey: function() {
       return this.settings + ':' + (this.settingsFeed ? this.settingsFeed.id : this.settingsFolder ? this.settingsFolder.id : '')
@@ -187,16 +187,17 @@ var settingsMixin = {
     showCurrentSettings: function() {
       if (this.current.type === 'feed' && this.current.feed.id) this.showFeedSettings(this.current.feed)
       if (this.current.type === 'folder' && this.current.folder.id) this.showFolderSettings(this.current.folder)
+      if (this.feedSelected === '') this.showSettings('allfeeds')
     },
     syncSelectionSettings: function() {
-      if (this.feedSelected === null || this.settingsClosing || ['feed', 'folder', 'menu'].indexOf(this.settings) === -1) return
-      var page = {name: 'menu'}
+      if (this.feedSelected === null || this.settingsClosing || ['feed', 'folder', 'allfeeds', 'menu'].indexOf(this.settings) === -1) return
+      var page = {name: this.feedSelected === '' ? 'allfeeds' : 'menu'}
       if (this.current.type === 'feed' && this.current.feed.id) page = {name: 'feed', feedId: this.current.feed.id}
       else if (this.current.type === 'folder' && this.current.folder.id) page = {name: 'folder', folderId: this.current.folder.id}
       var previous = this.settingsPage()
       if (previous.name === page.name && previous.feedId == page.feedId && previous.folderId == page.folderId) return
       this.saveSettingsScroll()
-      if (page.name === 'menu') this.settingsStack = []
+      if (page.name === 'menu' || page.name === 'allfeeds') this.settingsStack = []
       this.restoreSettingsPage(page)
       this.replaceSettingsHistory()
     },
@@ -292,6 +293,48 @@ var settingsMixin = {
       return this.runSettingsAction(field, function() {
         return api.settings.update(payload).then(requireSettingResponse)
       }, function() { this[property] = value }.bind(this))
+    },
+    saveBulkSetting: function(field, value) {
+      var folderID = this.settings === 'folder' ? this.settingsFolder.id : null
+      return this.runSettingsAction('bulk', function() {
+        if (field === 'layout') {
+          var layouts = readArticleListLayouts()
+          this.folders.forEach(function(folder) {
+            if (folderID === null || folder.id === folderID) layouts['folder:' + folder.id] = value
+          })
+          this.feeds.forEach(function(feed) {
+            if (folderID === null || feed.folder_id === folderID) layouts['feed:' + feed.id] = value
+          })
+          if (folderID === null) layouts.all = value
+          if (!writeArticleListLayouts(layouts)) throw new Error('浏览器无法保存设置，请检查存储权限。')
+          return
+        }
+        var payload = {field: field, value: value}
+        if (folderID !== null) payload.folder_id = folderID
+        return api.settings.bulk_update(payload).then(requireSettingResponse)
+      }.bind(this), function() {
+        if (field === 'layout') {
+          var layout = getArticleListLayout(this.feedSelected)
+          if (layout !== this.articleListLayout) {
+            this.articleListLayoutApplying = true
+            this.articleListLayout = layout
+          }
+          return
+        }
+        if (folderID === null) {
+          if (field === 'unread_first') this.itemUnreadFirstAll = value
+          else this.autoReadScrollAll = value
+        }
+        return this.refreshFeeds().then(function() {
+          var affected = folderID === null || this.current.folder.id === folderID || this.current.feed.folder_id === folderID
+          if (!affected) return
+          if (field === 'unread_first') return this.refreshItems(false)
+          this.resetItemListAutoRead()
+          this.$nextTick(this.updateItemListAutoReadSeen)
+        }.bind(this)).catch(function() {
+          throw new Error('设置已保存，刷新状态失败，请刷新页面。')
+        })
+      }.bind(this))
     },
     saveReadItemsKeepLimit: function() {
       var value = Number(this.readItemsKeepLimitDraft)

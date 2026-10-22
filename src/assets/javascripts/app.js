@@ -393,9 +393,7 @@ function readArticleListLayouts() {
 }
 
 function writeArticleListLayouts(layouts) {
-  try {
-    localStorage.setItem(ARTICLE_LIST_LAYOUTS_KEY, JSON.stringify(layouts))
-  } catch (e) {}
+  return writeLocalSetting(ARTICLE_LIST_LAYOUTS_KEY, layouts)
 }
 
 function normalizeAppFontSize(size) {
@@ -733,7 +731,7 @@ var vm = new Vue({
         this.articleListLayout = layout
       }
       writeFeedSelected(newVal)
-      this.syncSelectionSettings()
+      if (this.feedSelectionExists(oldVal)) this.syncSelectionSettings()
       this.refreshItems(false)
       if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0
       this.syncNavigationHistory()

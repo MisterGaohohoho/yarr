@@ -57,6 +57,7 @@ func (s *Server) handler() http.Handler {
 	r.For("/api/items", s.handleItemList)
 	r.For("/api/items/:id", s.handleItem)
 	r.For("/api/settings", s.handleSettings)
+	r.For("/api/settings/bulk", s.handleBulkSettings)
 	r.For("/api/backups", s.handleBackup)
 	r.For("/opml/import", s.handleOPMLImport)
 	r.For("/opml/export", s.handleOPMLExport)

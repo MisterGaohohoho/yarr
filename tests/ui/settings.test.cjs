@@ -367,7 +367,7 @@ test('all settings pages fit desktop, tablet and phone widths in every theme', a
     await p.setViewportSize({width, height: 900})
     for (const theme of ['light', 'sepia', 'night']) {
       await p.evaluate(theme => { vm.theme.name = theme }, theme)
-      for (const name of ['menu', 'feed', 'folder', 'create', 'deletefeeds', 'auth', 'bilibili', 'rsshub', 'rsshubdetails', 'shortcuts']) {
+      for (const name of ['menu', 'feed', 'folder', 'allfeeds', 'create', 'deletefeeds', 'auth', 'bilibili', 'rsshub', 'rsshubdetails', 'shortcuts']) {
         await p.evaluate(({name, id}) => {
           vm.finishClosingSettings()
           if (name === 'feed') vm.showFeedSettings(vm.feeds.find(feed => feed.id === id))
@@ -378,15 +378,25 @@ test('all settings pages fit desktop, tablet and phone widths in every theme', a
           else vm.showSettings(name)
         }, {name, id: feeds[0].id})
         await p.locator('.settings-workspace').waitFor()
+        if (['menu', 'feed', 'folder', 'allfeeds', 'deletefeeds'].includes(name)) {
+          await p.locator('.settings-scroll > .settings-dialog:not([class*="settings-page-"])').waitFor()
+        }
         const sizes = await p.locator('.settings-workspace').evaluate(el => ({width: el.clientWidth, scroll: el.scrollWidth, body: document.documentElement.scrollWidth, viewport: innerWidth}))
         assert.ok(sizes.width > 200, `${width}/${theme}/${name}: nonblank settings`)
         assert.ok(sizes.scroll <= sizes.width + 1, `${width}/${theme}/${name}: horizontal overflow ${JSON.stringify(sizes)}`)
         assert.ok(sizes.body <= sizes.viewport + 1, `${width}/${theme}/${name}: page overflow`)
+        if (width <= 390 && ['folder', 'allfeeds'].includes(name)) {
+          assert.equal(await p.locator('.settings-bulk-pair').first().evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length), 1)
+        }
         assert.equal(await p.locator('[role="dialog"]').count(), 0)
-        if (screenshots && ['menu', 'feed'].includes(name)) await p.screenshot({path: join(screenshots, `${width}-${theme}-${name}.png`)})
+        if (screenshots && ['menu', 'feed', 'folder', 'allfeeds'].includes(name)) await p.screenshot({path: join(screenshots, `${width}-${theme}-${name}.png`)})
       }
     }
   }
+  await p.emulateMedia({reducedMotion: 'reduce'})
+  await p.evaluate(() => vm.showSettings('allfeeds'))
+  await p.locator('.settings-bulk button').first().waitFor()
+  assert.equal(await p.locator('.settings-bulk button').first().evaluate(el => getComputedStyle(el).transitionDuration), '0s')
   await close(p)
 })
 
@@ -836,8 +846,8 @@ test('open source settings follow feed folder and all-source selections', async 
       assert.equal(await p.evaluate(() => vm.settingsFolder.id), folder.id)
       assert.equal((await p.locator('#settings-heading').textContent()).trim(), folder.title)
       await p.evaluate(() => { vm.feedSelected = ''; return vm.$nextTick() })
-      assert.equal(await p.evaluate(() => vm.settings), 'menu')
-      assert.equal((await p.locator('#settings-heading').textContent()).trim(), '系统设置')
+      assert.equal(await p.evaluate(() => vm.settings), 'allfeeds')
+      assert.equal((await p.locator('#settings-heading').textContent()).trim(), '全部订阅源设置')
       await p.evaluate(id => { vm.feedSelected = 'feed:' + id; return vm.$nextTick() }, feeds[0].id)
       assert.equal(await p.evaluate(() => vm.settingsFeed.id), feeds[0].id)
       assert.equal(await p.getByRole('textbox', {name: '标题', exact: true}).inputValue(), 'First source draft')
@@ -854,5 +864,136 @@ test('open source settings follow feed folder and all-source selections', async 
   } finally {
     await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: null})
     await api('/api/folders/' + folder.id, 'DELETE')
+  }
+})
+
+test('folder and all-source bulk buttons persist only their intended scopes', async () => {
+  const folder = await (await api('/api/folders', 'POST', {title: 'Bulk target'})).json()
+  const other = await (await api('/api/folders', 'POST', {title: 'Bulk empty'})).json()
+  await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: folder.id})
+  const p = await page()
+  const statuses = async () => (await (await api('/api/items')).json()).list.map(item => [item.id, item.status])
+  const originalStatuses = await statuses()
+  try {
+    for (const scope of ['folder', 'allfeeds']) {
+      const title = scope === 'folder' ? '文件夹设置' : '全部订阅源设置'
+      await p.evaluate(({scope, id}) => {
+        vm.finishClosingSettings()
+        vm.feedSelected = scope === 'folder' ? 'folder:' + id : ''
+      }, {scope, id: folder.id})
+      await p.getByRole('button', {name: title, exact: true}).click()
+      await p.locator('.settings-bulk').waitFor()
+      assert.equal(await p.locator('.settings-bulk button .icon svg').count(), 6)
+      const click = async name => {
+        await p.getByRole('button', {name, exact: true}).click()
+        await p.waitForFunction(() => !vm.settingsPending.bulk)
+      }
+      const checkLayout = async layout => {
+        const stored = await p.evaluate(() => readArticleListLayouts())
+        assert.equal(stored['folder:' + folder.id], layout)
+        assert.equal(stored['feed:' + feeds[0].id], layout)
+        assert.equal(stored['folder:' + other.id], scope === 'allfeeds' ? layout : undefined)
+        assert.equal(stored['feed:' + feeds[1].id], scope === 'allfeeds' ? layout : undefined)
+        assert.equal(stored.all, scope === 'allfeeds' ? layout : undefined)
+        assert.equal(await p.evaluate(() => vm.articleListLayout), layout)
+      }
+      await click('全部切换卡片模式')
+      await checkLayout('card')
+      await p.reload()
+      await p.waitForFunction(() => window.vm && vm.feeds.length >= 2 && !vm.loading.items)
+      await checkLayout('card')
+      await p.getByRole('button', {name: title, exact: true}).click()
+      await click('全部切换列表模式')
+      await checkLayout('list')
+
+      for (const [field, label, initial] of [['unread_first', '未读优先', true], ['auto_read_scroll', '自动标为已读', false]]) {
+        for (const value of [true, false]) {
+          await click('全部' + (value ? '启用' : '关闭') + label)
+          const [savedFolders, savedFeeds, global] = await Promise.all(['/api/folders', '/api/feeds', '/api/settings'].map(async path => (await api(path)).json()))
+          for (const object of savedFolders) assert.equal(object[field], scope === 'allfeeds' || object.id === folder.id ? value : initial)
+          for (const object of savedFeeds) assert.equal(object[field], scope === 'allfeeds' || object.folder_id === folder.id ? value : initial)
+          assert.equal(global[field], scope === 'allfeeds' ? value : initial)
+          assert.equal(await p.evaluate(field => field === 'unread_first' ? vm.itemUnreadFirst : vm.autoReadScroll, field), value)
+          assert.equal(await p.locator('[role="dialog"]').count(), 0)
+        }
+      }
+    }
+    assert.deepEqual(await statuses(), originalStatuses, 'changing auto-read preferences must not mark articles read')
+    await p.reload()
+    await p.waitForFunction(() => window.vm && vm.feeds.length >= 2 && !vm.loading.items)
+    assert.equal(await p.evaluate(() => vm.itemUnreadFirst), false)
+    assert.equal(await p.evaluate(() => vm.autoReadScroll), false)
+  } finally {
+    await api('/api/settings/bulk', 'PUT', {field: 'unread_first', value: true})
+    await api('/api/settings/bulk', 'PUT', {field: 'auto_read_scroll', value: false})
+    await api('/api/feeds/' + feeds[0].id, 'PUT', {folder_id: null})
+    await api('/api/folders/' + folder.id, 'DELETE')
+    await api('/api/folders/' + other.id, 'DELETE')
+    await close(p)
+  }
+})
+
+test('bulk settings handle failures, duplicate clicks, late replies and mobile Back', async () => {
+  const folder = await (await api('/api/folders', 'POST', {title: 'Bulk late reply'})).json()
+  const p = await page(390)
+  let release
+  try {
+    await p.evaluate(() => { vm.feedSelected = '' })
+    const open = () => p.getByRole('button', {name: '全部订阅源设置', exact: true}).click()
+    await open()
+    await p.locator('.settings-bulk').waitFor()
+    await p.goBack()
+    await p.waitForFunction(() => !vm.settings)
+    assert.equal(await p.evaluate(() => vm.feedSelected), '')
+    await open()
+    await p.route('**/api/settings/bulk', route => route.fulfill({status: 500}))
+    await p.getByRole('button', {name: '全部关闭未读优先', exact: true}).click()
+    await p.waitForFunction(() => !vm.settingsPending.bulk && vm.settingsNotice.includes('保存失败'))
+    assert.equal(await p.evaluate(() => vm.itemUnreadFirst), true)
+    assert.equal((await (await api('/api/settings')).json()).unread_first, true)
+    await p.unroute('**/api/settings/bulk')
+
+    const oldLayout = await p.evaluate(() => vm.articleListLayout)
+    const oldStorage = await p.evaluate(() => localStorage.getItem(ARTICLE_LIST_LAYOUTS_KEY))
+    await p.evaluate(() => {
+      window.bulkOriginalSetItem = Storage.prototype.setItem
+      Storage.prototype.setItem = function(key, value) {
+        if (key === ARTICLE_LIST_LAYOUTS_KEY) throw new Error('Storage blocked')
+        return window.bulkOriginalSetItem.call(this, key, value)
+      }
+    })
+    await p.getByRole('button', {name: '全部切换卡片模式', exact: true}).click()
+    await p.waitForFunction(() => !vm.settingsPending.bulk && vm.settingsNotice.includes('存储权限'))
+    assert.equal(await p.evaluate(() => vm.articleListLayout), oldLayout)
+    assert.equal(await p.evaluate(() => localStorage.getItem(ARTICLE_LIST_LAYOUTS_KEY)), oldStorage)
+    await p.evaluate(() => { Storage.prototype.setItem = window.bulkOriginalSetItem })
+
+    let started, requests = 0
+    const requested = new Promise(resolve => { started = resolve })
+    const delayed = new Promise(resolve => { release = resolve })
+    await p.route('**/api/settings/bulk', async route => {
+      requests++
+      started()
+      await delayed
+      await route.continue()
+    })
+    await p.getByRole('button', {name: '全部关闭未读优先', exact: true}).click()
+    await requested
+    assert.equal(await p.locator('.settings-bulk button:disabled').count(), 6)
+    assert.equal(await p.evaluate(() => vm.saveBulkSetting('unread_first', true)), false)
+    assert.equal(requests, 1)
+    await p.evaluate(id => { vm.feedSelected = 'folder:' + id }, folder.id)
+    await p.waitForFunction(id => vm.settingsFolder && vm.settingsFolder.id === id, folder.id)
+    release()
+    await p.waitForFunction(() => !vm.settingsPending.bulk)
+    assert.equal(await p.evaluate(() => vm.settings), 'folder')
+    assert.equal(await p.evaluate(() => vm.itemUnreadFirst), false)
+    assert.equal(await p.evaluate(() => vm.settingsNotice), '')
+    assert.equal(await p.evaluate(() => vm.settingsNotices['allfeeds:']), '已保存。')
+  } finally {
+    if (release) release()
+    await api('/api/settings/bulk', 'PUT', {field: 'unread_first', value: true})
+    await api('/api/folders/' + folder.id, 'DELETE')
+    await close(p)
   }
 })

@@ -94,6 +94,9 @@
       update: function(data) {
         return api('put', './api/settings', data)
       },
+      bulk_update: function(data) {
+        return api('put', './api/settings/bulk', data)
+      },
     },
     bilibili: {
       get: function() { return api('get', './api/bilibili').then(json) },

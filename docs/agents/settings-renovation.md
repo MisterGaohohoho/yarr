@@ -4,6 +4,8 @@
 
 The reader remains a Go binary with SQLite, embedded assets, Vue, and the existing CSS library. No API route, database migration, persisted preference key, OPML attribute, Fever contract, or Google Reader contract changes.
 
+The later folder/all-sources bulk settings feature adds `PUT /api/settings/bulk` with an optional `folder_id`, a `field` restricted to `unread_first` or `auto_read_scroll`, and a boolean `value`. It atomically updates existing folders and subscriptions, plus the all-sources preference for global operations. Layout bulk actions retain browser-local storage. No migration or inheritance rule is added. All-sources settings have their own article-list toolbar entry and share folder settings' six icon actions and page transitions.
+
 The detail column has two presentation states: reading and settings. Opening settings leaves the selected article and its DOM mounted. Settings own their page ancestry, per-page scroll position, object-keyed text drafts, pending writes, and feedback. The reading view does not acquire a second copy of article state.
 
 ## Architecture Audit
