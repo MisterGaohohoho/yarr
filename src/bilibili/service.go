@@ -1,4 +1,4 @@
-// Package bilibili provides cached RSS for one configured account's followed videos.
+// Package bilibili provides cached RSS for one configured account's followed videos and watchlater list.
 package bilibili
 
 import (
@@ -15,9 +15,9 @@ import (
 type cacheStore interface {
 	GetBilibiliConfig() (storage.BilibiliConfig, error)
 	SetBilibiliCookie(string) error
-	GetBilibiliCache(string, int64) (storage.BilibiliCache, error)
+	GetBilibiliCache(string, string, int64) (storage.BilibiliCache, error)
 	SaveBilibiliCache(storage.BilibiliCache) (bool, error)
-	TouchBilibiliCache(string, int64, int64) error
+	TouchBilibiliCache(string, string, int64, int64) error
 	CleanBilibiliCache(int64) error
 	SetBilibiliRateLimit(int64) error
 }
@@ -94,6 +94,12 @@ func (s *Service) Configured() (bool, error) {
 	return c.Cookie != "", err
 }
 func (s *Service) Get(ctx context.Context, uid string) Result {
+	return s.get(ctx, storage.BilibiliFollowings, uid)
+}
+func (s *Service) GetWatchlater(ctx context.Context, uid string) Result {
+	return s.get(ctx, storage.BilibiliWatchlater, uid)
+}
+func (s *Service) get(ctx context.Context, kind, uid string) Result {
 	if !numericID(uid) {
 		return Result{Body: []byte("Bilibili UID 必须为有效的数字 ID。"), Status: http.StatusBadRequest}
 	}
@@ -105,16 +111,16 @@ func (s *Service) Get(ctx context.Context, uid string) Result {
 	}
 	if config.Cookie == "" {
 		s.mu.Unlock()
-		return notice(nil, uid, config.Generation, "unconfigured", 0)
+		return notice(nil, kind, uid, config.Generation, "unconfigured", 0)
 	}
-	cached, err := s.store.GetBilibiliCache(uid, config.Generation)
+	cached, err := s.store.GetBilibiliCache(kind, uid, config.Generation)
 	if err != nil {
 		s.mu.Unlock()
 		return unavailable("RSS 缓存暂时不可用。", 30)
 	}
 	now := s.client.now()
 	cached.AccessedAt = now.Unix()
-	if err = s.store.TouchBilibiliCache(uid, config.Generation, now.Unix()); err != nil {
+	if err = s.store.TouchBilibiliCache(kind, uid, config.Generation, now.Unix()); err != nil {
 		s.mu.Unlock()
 		return unavailable("RSS 缓存暂时不可用。", 30)
 	}
@@ -126,7 +132,7 @@ func (s *Service) Get(ctx context.Context, uid string) Result {
 		s.mu.Unlock()
 		return response(cached, s.client.now())
 	}
-	key := fmt.Sprintf("%s:%d", uid, config.Generation)
+	key := fmt.Sprintf("%s:%s:%d", kind, uid, config.Generation)
 	running := s.jobs[key]
 	if running == nil {
 		if _, err = s.store.SaveBilibiliCache(cached); err != nil {
@@ -136,7 +142,7 @@ func (s *Service) Get(ctx context.Context, uid string) Result {
 		taskCtx, cancel := context.WithTimeout(context.Background(), s.taskTimeout)
 		running = &job{done: make(chan struct{}), cancel: cancel}
 		s.jobs[key] = running
-		go s.refresh(taskCtx, key, uid, config, running)
+		go s.refresh(taskCtx, key, kind, uid, config, running)
 	}
 	s.mu.Unlock()
 	if len(cached.RSS) > 0 {
@@ -163,7 +169,7 @@ func (s *Service) Get(ctx context.Context, uid string) Result {
 			s.mu.Unlock()
 			return unavailable("Bilibili Cookie 配置已更新，请重试。", 1)
 		}
-		cached, err = s.store.GetBilibiliCache(uid, config.Generation)
+		cached, err = s.store.GetBilibiliCache(kind, uid, config.Generation)
 		s.mu.Unlock()
 		if err != nil {
 			return unavailable("RSS 缓存暂时不可用。", 30)
@@ -171,8 +177,8 @@ func (s *Service) Get(ctx context.Context, uid string) Result {
 		return response(cached, s.client.now())
 	}
 }
-func notice(old []byte, uid string, generation int64, code string, at int64) Result {
-	b, err := noticeRSS(old, uid, generation, code, at)
+func notice(old []byte, kind, uid string, generation int64, code string, at int64) Result {
+	b, err := noticeRSS(old, kind, uid, generation, code, at)
 	if err != nil {
 		return unavailable("RSS 缓存暂时不可用。", 30)
 	}
@@ -180,10 +186,10 @@ func notice(old []byte, uid string, generation int64, code string, at int64) Res
 }
 func response(c storage.BilibiliCache, now time.Time) Result {
 	if c.Failure == "unauthorized" {
-		return notice(c.RSS, c.UID, c.Generation, c.Failure, c.FailureAt)
+		return notice(c.RSS, c.Kind, c.UID, c.Generation, c.Failure, c.FailureAt)
 	}
 	if c.Failure == "mismatch" {
-		return notice(nil, c.UID, c.Generation, c.Failure, c.FailureAt)
+		return notice(nil, c.Kind, c.UID, c.Generation, c.Failure, c.FailureAt)
 	}
 	if len(c.RSS) > 0 {
 		return Result{Body: c.RSS, Status: http.StatusOK}
@@ -194,9 +200,9 @@ func response(c storage.BilibiliCache, now time.Time) Result {
 	}
 	return unavailable(failureText(c.Failure), retry)
 }
-func (s *Service) refresh(ctx context.Context, key, uid string, config storage.BilibiliConfig, j *job) {
+func (s *Service) refresh(ctx context.Context, key, kind, uid string, config storage.BilibiliConfig, j *job) {
 	defer j.cancel()
-	body, fetchErr := s.client.fetch(ctx, uid, config.Cookie)
+	body, fetchErr := s.client.fetch(ctx, kind, uid, config.Cookie)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer func() { delete(s.jobs, key); close(j.done) }()
@@ -208,7 +214,7 @@ func (s *Service) refresh(ctx context.Context, key, uid string, config storage.B
 	if current.Generation != config.Generation {
 		return
 	}
-	c, err := s.store.GetBilibiliCache(uid, config.Generation)
+	c, err := s.store.GetBilibiliCache(kind, uid, config.Generation)
 	if err != nil {
 		j.err = err
 		return

@@ -2,6 +2,11 @@ package storage
 
 import "database/sql"
 
+const (
+	BilibiliFollowings = "followings"
+	BilibiliWatchlater = "watchlater"
+)
+
 // BilibiliConfig is private server configuration, never a public settings value.
 type BilibiliConfig struct {
 	Cookie         string
@@ -11,6 +16,7 @@ type BilibiliConfig struct {
 }
 
 type BilibiliCache struct {
+	Kind        string
 	UID         string
 	Generation  int64
 	RSS         []byte
@@ -37,6 +43,20 @@ func m27_bilibili(tx *sql.Tx) error {
 	return err
 }
 
+func m28_bilibili_cache_kind(tx *sql.Tx) error {
+	_, err := tx.Exec(`CREATE TABLE bilibili_cache_new (
+ kind TEXT NOT NULL, uid TEXT NOT NULL, generation INTEGER NOT NULL, rss BLOB NOT NULL,
+ succeeded_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, accessed_at INTEGER NOT NULL,
+ failure TEXT NOT NULL, failure_at INTEGER NOT NULL, retry_at INTEGER NOT NULL,
+ PRIMARY KEY(kind,uid,generation));
+ INSERT INTO bilibili_cache_new
+ SELECT 'followings',uid,generation,rss,succeeded_at,expires_at,accessed_at,failure,failure_at,retry_at FROM bilibili_cache;
+ DROP TABLE bilibili_cache;
+ ALTER TABLE bilibili_cache_new RENAME TO bilibili_cache;
+ CREATE INDEX bilibili_cache_access ON bilibili_cache(accessed_at);`)
+	return err
+}
+
 func (s *Storage) GetBilibiliConfig() (BilibiliConfig, error) {
 	var c BilibiliConfig
 	err := s.db.QueryRow(`SELECT cookie,generation,invalid_at,rate_limit_until FROM bilibili_config WHERE id=1`).Scan(&c.Cookie, &c.Generation, &c.InvalidAt, &c.RateLimitUntil)
@@ -58,9 +78,9 @@ func (s *Storage) SetBilibiliCookie(cookie string) error {
 	return tx.Commit()
 }
 
-func (s *Storage) GetBilibiliCache(uid string, generation int64) (BilibiliCache, error) {
-	c := BilibiliCache{UID: uid, Generation: generation}
-	err := s.db.QueryRow(`SELECT rss,succeeded_at,expires_at,accessed_at,failure,failure_at,retry_at FROM bilibili_cache WHERE uid=? AND generation=?`, uid, generation).Scan(&c.RSS, &c.SucceededAt, &c.ExpiresAt, &c.AccessedAt, &c.Failure, &c.FailureAt, &c.RetryAt)
+func (s *Storage) GetBilibiliCache(kind, uid string, generation int64) (BilibiliCache, error) {
+	c := BilibiliCache{Kind: kind, UID: uid, Generation: generation}
+	err := s.db.QueryRow(`SELECT rss,succeeded_at,expires_at,accessed_at,failure,failure_at,retry_at FROM bilibili_cache WHERE kind=? AND uid=? AND generation=?`, kind, uid, generation).Scan(&c.RSS, &c.SucceededAt, &c.ExpiresAt, &c.AccessedAt, &c.Failure, &c.FailureAt, &c.RetryAt)
 	if err == sql.ErrNoRows {
 		err = nil
 	}
@@ -78,11 +98,11 @@ func (s *Storage) SaveBilibiliCache(c BilibiliCache) (bool, error) {
 	}
 	defer tx.Rollback()
 	res, err := tx.Exec(`INSERT INTO bilibili_cache
- SELECT ?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM bilibili_config WHERE id=1 AND generation=?)
- ON CONFLICT(uid,generation) DO UPDATE SET rss=excluded.rss,succeeded_at=excluded.succeeded_at,
+ SELECT ?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM bilibili_config WHERE id=1 AND generation=?)
+ ON CONFLICT(kind,uid,generation) DO UPDATE SET rss=excluded.rss,succeeded_at=excluded.succeeded_at,
  expires_at=excluded.expires_at,accessed_at=MAX(bilibili_cache.accessed_at,excluded.accessed_at),
  failure=excluded.failure,failure_at=excluded.failure_at,retry_at=excluded.retry_at`,
-		c.UID, c.Generation, c.RSS, c.SucceededAt, c.ExpiresAt, c.AccessedAt, c.Failure, c.FailureAt, c.RetryAt, c.Generation)
+		c.Kind, c.UID, c.Generation, c.RSS, c.SucceededAt, c.ExpiresAt, c.AccessedAt, c.Failure, c.FailureAt, c.RetryAt, c.Generation)
 	if err != nil {
 		return false, err
 	}
@@ -98,8 +118,8 @@ func (s *Storage) SaveBilibiliCache(c BilibiliCache) (bool, error) {
 	return count > 0, tx.Commit()
 }
 
-func (s *Storage) TouchBilibiliCache(uid string, generation, now int64) error {
-	_, err := s.db.Exec(`UPDATE bilibili_cache SET accessed_at=? WHERE uid=? AND generation=?`, now, uid, generation)
+func (s *Storage) TouchBilibiliCache(kind, uid string, generation, now int64) error {
+	_, err := s.db.Exec(`UPDATE bilibili_cache SET accessed_at=? WHERE kind=? AND uid=? AND generation=?`, now, kind, uid, generation)
 	return err
 }
 func (s *Storage) CleanBilibiliCache(before int64) error {

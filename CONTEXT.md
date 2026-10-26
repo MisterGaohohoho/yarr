@@ -57,8 +57,16 @@ A settings action that creates an RSSHub subscription link from a supported serv
 _Avoid_: RSSHub preset, RSSHub shortcut
 
 **Bilibili UID**:
-The numeric Bilibili user identifier used to create a Bilibili user video subscription source.
+The numeric identifier of a Bilibili account.
 _Avoid_: B站 ID, Bilibili 用户 ID
+
+**Bilibili 关注视频**:
+Videos published by creators followed by the signed-in Bilibili account.
+_Avoid_: 该账号的投稿
+
+**Bilibili 稍后再看**:
+The current list of videos the signed-in Bilibili account has saved to watch later.
+_Avoid_: yarr 收藏, 观看历史
 
 **自动刷新**:
 A setting that periodically checks subscription sources for new articles without user action.
@@ -251,6 +259,8 @@ _Avoid_: Sticky folder, 固定文件夹
 
 - A **文件夹** contains zero or more **订阅源**.
 - A **订阅源** produces zero or more **文章**.
+- **Bilibili 关注视频** and **Bilibili 稍后再看** use the same signed-in Bilibili account.
+- **Bilibili 稍后再看** articles use the time a video was added to the list; adding the same video again keeps the same article identity.
 - A **订阅源** can have one **订阅源刷新详情** in the current server process.
 - An **文章列表** shows zero or more **文章**.
 - **文章列表预加载** appends additional **文章** to the current **文章列表**.

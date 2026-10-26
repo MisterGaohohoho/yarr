@@ -43,6 +43,12 @@ func (s *Server) handleBilibiliConfig(c *router.Context) {
 	}
 }
 func (s *Server) handleBilibiliRSS(c *router.Context) {
+	s.handleBilibiliFeed(c, false)
+}
+func (s *Server) handleBilibiliWatchlaterRSS(c *router.Context) {
+	s.handleBilibiliFeed(c, true)
+}
+func (s *Server) handleBilibiliFeed(c *router.Context, watchlater bool) {
 	c.Out.Header().Set("Cache-Control", "no-store")
 	if c.Req.Method != http.MethodGet {
 		c.Out.Header().Set("Allow", "GET")
@@ -53,7 +59,12 @@ func (s *Server) handleBilibiliRSS(c *router.Context) {
 		http.Error(c.Out, "Bilibili RSS 暂时不可用。", http.StatusServiceUnavailable)
 		return
 	}
-	result := s.bilibili.Get(c.Req.Context(), c.Vars["uid"])
+	var result bilibili.Result
+	if watchlater {
+		result = s.bilibili.GetWatchlater(c.Req.Context(), c.Vars["uid"])
+	} else {
+		result = s.bilibili.Get(c.Req.Context(), c.Vars["uid"])
+	}
 	if result.Status == http.StatusOK {
 		c.Out.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
 	} else {

@@ -1,16 +1,22 @@
-# Bilibili 关注视频 RSS
+# Bilibili RSS
 
-接口：`GET /rss/bilibili/:uid`。配置了 BasePath 时，在路径前添加该前缀，例如：
+两个接口共用同一份 Cookie：
+
+- 关注视频：`GET /rss/bilibili/:uid`。
+- 稍后再看：`GET /rss/bilibili/watchlater/:uid`。
+
+配置了 BasePath 时，在路径前添加该前缀，例如：
 
 ```text
 https://your-yarr.example/reader/rss/bilibili/123456
+https://your-yarr.example/reader/rss/bilibili/watchlater/123456
 ```
 
-这是登录账号所关注 UP 主发布的视频动态，不是该 UID 自己的投稿。接口无需 yarr 登录 Cookie；完整订阅链接只包含 UID，不包含 Bilibili Cookie。
+关注视频是登录账号所关注 UP 主发布的视频动态，不是该 UID 自己的投稿；稍后再看是登录账号当前的稍后再看列表。两个接口均无需 yarr 登录 Cookie；完整订阅链接只包含 UID，不包含 Bilibili Cookie。
 
 ## 配置
 
-在 **系统设置 > 数据与安全 > Bilibili 关注视频** 中，粘贴浏览器请求里的完整 Cookie 值（不加 `Cookie:` 字段名），点击保存。输入框支持长文本，保存后清空，不回显已保存的 Cookie。清空按钮会删除当前凭据。
+在 **系统设置 > 数据与安全 > Bilibili** 中，粘贴浏览器请求里的完整 Cookie 值（不加 `Cookie:` 字段名），点击保存。输入框支持长文本，保存后清空，不回显已保存的 Cookie。清空按钮会删除当前凭据。
 
 仅支持一个登录 Cookie。订阅链接中的 UID 必须与 Cookie 的登录账号一致；每次完整抓取先调用登录状态接口核对账号，并使用账号名称作为 RSS 标题。保存配置本身不访问 Bilibili，下次 RSS 请求才验证和抓取。
 
@@ -21,11 +27,13 @@ Cookie 保存在 SQLite 中，随完整数据库备份保存；不会进入普�
 - `GET /api/bilibili`：只返回 `{"configured": true}` 或 `{"configured": false}`。
 - `PUT /api/bilibili`：提交 JSON `{"cookie": "完整 Cookie"}`。提交空字符串表示清空；缺少字段、非字符串或控制字符会返回 HTTP 400。
 
-替换或清空 Cookie 会立即使旧内容缓存失效、取消旧任务并递增配置版本。旧任务即使稍后结束，也不能覆盖新配置的缓存。再次保存相同 Cookie 也会重新开始验证。
+替换或清空 Cookie 会立即使两个接口的旧内容缓存失效、取消旧任务并递增配置版本。旧任务即使稍后结束，也不能覆盖新配置的缓存。再次保存相同 Cookie 也会重新开始验证。
 
-现有 RSSHub 的 Bilibili UID 快速添加功能仍表示“该 UP 主的投稿”，不是这个接口。在新订阅源中输入以上完整 RSS 链接即可订阅关注视频。
+现有 RSSHub 的 Bilibili UID 快速添加功能仍表示“该 UP 主的投稿”，与上述两个接口不同。在新订阅源中输入对应的完整 RSS 链接即可订阅关注视频或稍后再看。
 
 ## 内容
+
+### 关注视频
 
 按 RSSHub 的关注视频路由读取上游返回的一页全部视频，按发布时间倒序，不固定条数、不分页、不逐视频补详情，也不累积历史。视频 aid 是稳定 GUID，优先使用 BV 原文链接，缺少 BV 时使用 AV 链接。
 
@@ -33,10 +41,21 @@ Cookie 保存在 SQLite 中，随完整数据库备份保存；不会进入普�
 
 空视频列表是有效 RSS；缺失列表字段、异常嵌套 JSON 或不完整视频信息视为失败，不覆盖上次完整结果。
 
+### 稍后再看
+
+读取 `/x/v2/history/toview` 返回的当前列表全部视频，不筛选观看进度、不分页、不逐视频补详情，也不累积历史。RSS 标题为“账号名 稍后再看”，文章作者取视频 UP 主名称，时间取加入列表时间（`add_at`），按加入时间倒序。
+
+视频 aid 是稳定 GUID，同一视频去重。移出列表后重新加入仍为同一篇文章，不产生新的未读文章；移出列表不会删除阅读器已保存的文章。
+
+正文沿用关注视频的播放器、封面、简介、原视频链接及图片 enclosure，最后追加“在稍后再看列表中查看”。缺少有效 BV 时，原视频链接使用 AV，稍后再看链接指向列表首页。
+
+明确的空数组或 `null` 列表是有效空 RSS；缺失列表字段、格式异常，或任一视频缺少有效 aid、标题、作者、加入时间时，整批刷新失败，保留上次完整结果。
+
 ## 缓存与请求
 
+- 两个接口的内容缓存、失败冷却和并发任务按类型独立；Cookie、登录失效状态和请求限流共享。升级时保留已有关注视频缓存。
 - 完整成功后随机缓存 **5～10 分钟**。有效期内直接返回缓存，不验证 Cookie、不请求 Bilibili。
-- 缓存过期后立即返回旧内容，由此次访问触发后台刷新；同一 UID 和配置版本的并发请求共用一个任务。
+- 缓存过期后立即返回旧内容，由此次访问触发后台刷新；同一类型、UID 和配置版本的并发请求共用一个任务。
 - 全天可抓取，无夜间暂停，也无定时抓取。首次访问最多等待 25 秒；未完成则返回 HTTP 503 和 `Retry-After: 30`，后台继续，稍后重试。
 - 后台任务最多 3 分钟，包括排队、等待和重试。客户端断开不取消任务。
 - 当前 yarr 进程内的 Bilibili 请求独立串行，每次结束后随机间隔 3～7 秒，携带浏览器 User-Agent 和对应账号空间 Referer；不会把 Cookie 转发到重定向地址。
@@ -52,5 +71,6 @@ Cookie 保存在 SQLite 中，随完整数据库备份保存；不会进入普�
 源码参考：
 
 - [RSSHub followings-video.ts](https://github.com/DIYgod/RSSHub/blob/master/lib/routes/bilibili/followings-video.ts)
+- [RSSHub watchlater.ts](https://github.com/DIYgod/RSSHub/blob/master/lib/routes/bilibili/watchlater.ts)
 
 目前沿用参考代码的旧版关注动态接口，未移植 WBI 用户名查询或浏览器脚本解析。上游接口可能变化；自动化测试使用模拟响应，不要求真实 Cookie，也不证明上游在所有账号下可用。

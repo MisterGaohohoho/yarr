@@ -154,7 +154,7 @@ func TestRSSAndFreshCacheAtNight(t *testing.T) {
 		t.Fatal("cache miss")
 	}
 	config, _ := db.GetBilibiliConfig()
-	cache, _ := db.GetBilibiliCache("123", config.Generation)
+	cache, _ := db.GetBilibiliCache(storage.BilibiliFollowings, "123", config.Generation)
 	if cache.ExpiresAt-cache.SucceededAt != 300 || cache.AccessedAt != clock.now().Unix() {
 		t.Fatal(cache)
 	}
@@ -258,34 +258,42 @@ func TestInvalidCookieNoticePersistsAndBlocksOtherUIDs(t *testing.T) {
 	}
 }
 func TestConfigurationChangeRejectsInflightResult(t *testing.T) {
-	entered := make(chan struct{})
-	release := make(chan struct{})
-	var calls atomic.Int32
-	s, _, db := setup(t, func(w http.ResponseWriter, r *http.Request) {
-		if calls.Add(1) == 1 {
-			close(entered)
-			<-release
-		}
-		normal(w, r)
-	})
-	previous, _ := db.GetBilibiliConfig()
-	first := make(chan Result, 1)
-	go func() { first <- s.Get(context.Background(), "123") }()
-	<-entered
-	if err := s.Configure("SESSDATA=new-cookie"); err != nil {
-		t.Fatal(err)
-	}
-	close(release)
-	if got := <-first; got.Status != 503 || !strings.Contains(string(got.Body), "配置已更新") {
-		t.Fatal(got)
-	}
-	old, _ := db.GetBilibiliCache("123", previous.Generation)
-	if len(old.RSS) != 0 || old.Failure != "" {
-		t.Fatal("old task wrote back", old)
-	}
-	got := s.Get(context.Background(), "123")
-	if got.Status != 200 || len(readRSS(t, got.Body).Channel.Items) != 2 {
-		t.Fatal(got)
+	for _, kind := range []string{storage.BilibiliFollowings, storage.BilibiliWatchlater} {
+		t.Run(kind, func(t *testing.T) {
+			entered := make(chan struct{})
+			release := make(chan struct{})
+			var calls atomic.Int32
+			s, _, db := setup(t, func(w http.ResponseWriter, r *http.Request) {
+				if calls.Add(1) == 1 {
+					close(entered)
+					<-release
+				}
+				normalWatchlater(w, r)
+			})
+			previous, _ := db.GetBilibiliConfig()
+			get := s.Get
+			if kind == storage.BilibiliWatchlater {
+				get = s.GetWatchlater
+			}
+			first := make(chan Result, 1)
+			go func() { first <- get(context.Background(), "123") }()
+			<-entered
+			if err := s.Configure("SESSDATA=new-cookie"); err != nil {
+				t.Fatal(err)
+			}
+			close(release)
+			if got := <-first; got.Status != 503 || !strings.Contains(string(got.Body), "配置已更新") {
+				t.Fatal(got)
+			}
+			old, _ := db.GetBilibiliCache(kind, "123", previous.Generation)
+			if len(old.RSS) != 0 || old.Failure != "" {
+				t.Fatal("old task wrote back", old)
+			}
+			got := get(context.Background(), "123")
+			if got.Status != 200 || len(readRSS(t, got.Body).Channel.Items) != 2 {
+				t.Fatal(got)
+			}
+		})
 	}
 }
 func TestConcurrentColdRequestsShareTask(t *testing.T) {
@@ -429,7 +437,7 @@ func TestPartialRefreshKeepsCompleteCache(t *testing.T) {
 	}
 	finish(s)
 	config, _ := db.GetBilibiliConfig()
-	cache, _ := db.GetBilibiliCache("123", config.Generation)
+	cache, _ := db.GetBilibiliCache(storage.BilibiliFollowings, "123", config.Generation)
 	if cache.Failure != "invalid" || !bytes.Equal(cache.RSS, old.Body) {
 		t.Fatal("partial result replaced old RSS")
 	}

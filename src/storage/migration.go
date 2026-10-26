@@ -35,6 +35,7 @@ var migrations = []func(*sql.Tx) error{
 	m25_add_feed_refresh_times,
 	m26_discord_cache,
 	m27_bilibili,
+	m28_bilibili_cache_kind,
 }
 
 var maxVersion = int64(len(migrations))

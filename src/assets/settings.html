@@ -237,12 +237,12 @@
                     <div class="settings-accordion" :class="{open: settingsExpanded.bilibili}">
                         <button class="settings-accordion-header" type="button" :aria-expanded="settingsExpanded.bilibili ? 'true' : 'false'" aria-controls="settings-panel-bilibili" @click="toggleSettingsPanel('bilibili')">
                             <span class="icon" aria-hidden="true">{% inline "rss.svg" %}</span>
-                            <span class="settings-accordion-title">Bilibili 关注视频</span>
+                            <span class="settings-accordion-title">Bilibili</span>
                             <span class="icon settings-accordion-chevron" aria-hidden="true">{% inline "chevron-down.svg" %}</span>
                         </button>
                         <collapse>
                         <div id="settings-panel-bilibili" class="settings-accordion-panel" v-if="settingsExpanded.bilibili">
-                        <p class="settings-accordion-note">读取登录账号关注的视频动态。订阅链接为 <code>/rss/bilibili/你的UID</code>，UID 必须与 Cookie 登录账号一致。</p>
+                        <p class="settings-accordion-note">关注视频订阅链接为 <code>/rss/bilibili/你的UID</code>；稍后再看订阅链接为 <code>/rss/bilibili/watchlater/你的UID</code>。两者共用下方 Cookie，UID 必须与 Cookie 登录账号一致。</p>
                         <p class="settings-accordion-note" aria-live="polite">Cookie：{{ settingsPending['bilibili-load'] ? '正在读取配置状态…' : bilibiliConfigured ? '已配置' : '未配置' }}</p>
                         <form @submit.prevent="updateBilibiliConfig(false)">
                             <label for="bilibili-cookie">Bilibili Cookie</label>

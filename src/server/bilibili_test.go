@@ -61,7 +61,20 @@ func TestBilibiliRSSPublicBasePathAndProtectedConfig(t *testing.T) {
 			for _, tc := range []struct {
 				method, path string
 				status       int
-			}{{"GET", "/rss/bilibili/123", 200}, {"POST", "/rss/bilibili/123", 405}, {"GET", "/rss/bilibili/0", 400}, {"GET", "/rss/bilibili/123/extra", 404}, {"GET", "/api/bilibili", 401}, {"PUT", "/api/bilibili", 401}, {"GET", "/api/settings", 401}} {
+			}{
+				{"GET", "/rss/bilibili/123", 200},
+				{"POST", "/rss/bilibili/123", 405},
+				{"GET", "/rss/bilibili/0", 400},
+				{"GET", "/rss/bilibili/123/extra", 404},
+				{"GET", "/rss/bilibili/watchlater/123", 200},
+				{"POST", "/rss/bilibili/watchlater/123", 405},
+				{"GET", "/rss/bilibili/watchlater/0", 400},
+				{"GET", "/rss/bilibili/watchlater/abc", 400},
+				{"GET", "/rss/bilibili/watchlater/123/extra", 404},
+				{"GET", "/api/bilibili", 401},
+				{"PUT", "/api/bilibili", 401},
+				{"GET", "/api/settings", 401},
+			} {
 				w := httptest.NewRecorder()
 				handler.ServeHTTP(w, httptest.NewRequest(tc.method, base+tc.path, nil))
 				if w.Code != tc.status {
@@ -69,6 +82,9 @@ func TestBilibiliRSSPublicBasePathAndProtectedConfig(t *testing.T) {
 				}
 				if tc.status == 200 && (!strings.Contains(w.Body.String(), "未配置") || w.Header().Get("Cache-Control") != "no-store") {
 					t.Fatal(w.Body.String())
+				}
+				if tc.status == 405 && w.Header().Get("Allow") != "GET" {
+					t.Fatal("missing allowed method", tc.path)
 				}
 			}
 			login := httptest.NewRecorder()
@@ -81,12 +97,24 @@ func TestBilibiliRSSPublicBasePathAndProtectedConfig(t *testing.T) {
 				t.Fatal(w.Code)
 			}
 			config, _ := db.GetBilibiliConfig()
-			rss := []byte(`<rss version="2.0"><channel><title>cached</title><link>https://t.bilibili.com</link><description>cached</description></channel></rss>`)
-			db.SaveBilibiliCache(storage.BilibiliCache{UID: "123", Generation: config.Generation, RSS: rss, ExpiresAt: time.Now().Add(10 * time.Minute).Unix(), AccessedAt: time.Now().Unix()})
-			w = httptest.NewRecorder()
-			handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, base+"/rss/bilibili/123", nil))
-			if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), rss) || !strings.Contains(w.Header().Get("Content-Type"), "application/rss+xml") {
-				t.Fatal(w.Code, w.Body.String())
+			cached := map[string][]byte{}
+			for _, kind := range []string{storage.BilibiliFollowings, storage.BilibiliWatchlater} {
+				rss := []byte(`<rss version="2.0"><channel><title>` + kind + `</title><link>https://www.bilibili.com</link><description>cached</description></channel></rss>`)
+				if saved, err := db.SaveBilibiliCache(storage.BilibiliCache{Kind: kind, UID: "123", Generation: config.Generation, RSS: rss, ExpiresAt: time.Now().Add(10 * time.Minute).Unix(), AccessedAt: time.Now().Unix()}); !saved || err != nil {
+					t.Fatal(saved, err)
+				}
+				path := "/rss/bilibili/123"
+				if kind == storage.BilibiliWatchlater {
+					path = "/rss/bilibili/watchlater/123"
+				}
+				cached[path] = rss
+			}
+			for path, rss := range cached {
+				w = httptest.NewRecorder()
+				handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, base+path, nil))
+				if w.Code != 200 || !bytes.Equal(w.Body.Bytes(), rss) || !strings.Contains(w.Header().Get("Content-Type"), "application/rss+xml") {
+					t.Fatal(path, w.Code, w.Body.String())
+				}
 			}
 		})
 	}

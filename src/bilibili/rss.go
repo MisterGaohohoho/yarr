@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/nkanaev/yarr/src/content/sanitizer"
+	"github.com/nkanaev/yarr/src/storage"
 )
 
 type envelope struct {
@@ -105,7 +106,7 @@ type video struct {
 
 var bvidPattern = regexp.MustCompile(`^BV[0-9A-Za-z]+$`)
 
-func (c *client) fetch(ctx context.Context, uid, cookie string) ([]byte, error) {
+func (c *client) fetch(ctx context.Context, kind, uid, cookie string) ([]byte, error) {
 	var login envelope
 	if err := c.get(ctx, navURL, uid, cookie, &login); err != nil {
 		return nil, err
@@ -132,6 +133,9 @@ func (c *client) fetch(ctx context.Context, uid, cookie string) ([]byte, error) 
 	}
 	if strings.TrimSpace(account.Uname) == "" {
 		return nil, &fetchError{"invalid"}
+	}
+	if kind == storage.BilibiliWatchlater {
+		return c.fetchWatchlater(ctx, uid, cookie, account.Uname)
 	}
 	var response envelope
 	endpoint := videosURL + "?" + url.Values{"uid": {uid}, "type": {"8"}}.Encode()
@@ -222,14 +226,22 @@ func coverURL(raw string) string {
 	u.Scheme = "https"
 	return u.String()
 }
-func noticeRSS(old []byte, uid string, generation int64, code string, at int64) ([]byte, error) {
+func noticeRSS(old []byte, kind, uid string, generation int64, code string, at int64) ([]byte, error) {
 	r := rss{Version: "2.0", Channel: rssChannel{Title: "Bilibili 关注视频动态", Link: "https://t.bilibili.com/?tab=8", Description: "Bilibili 订阅状态"}}
+	if kind == storage.BilibiliWatchlater {
+		r.Channel.Title = "Bilibili 稍后再看"
+		r.Channel.Link = watchlaterLink
+	}
 	if len(old) > 0 {
 		if err := xml.Unmarshal(old, &r); err != nil {
 			return nil, err
 		}
 	}
-	item := rssItem{Title: failureText(code), Description: failureText(code), Link: r.Channel.Link, GUID: guid{"false", fmt.Sprintf("bilibili-notice:%s:%d:%s:%d", uid, generation, code, at)}}
+	noticeUID := uid
+	if kind == storage.BilibiliWatchlater {
+		noticeUID = kind + ":" + uid
+	}
+	item := rssItem{Title: failureText(code), Description: failureText(code), Link: r.Channel.Link, GUID: guid{"false", fmt.Sprintf("bilibili-notice:%s:%d:%s:%d", noticeUID, generation, code, at)}}
 	if at > 0 {
 		item.PubDate = time.Unix(at, 0).UTC().Format(time.RFC1123Z)
 	}

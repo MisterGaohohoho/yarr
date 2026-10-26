@@ -20,7 +20,7 @@ func unsafeMethod(method string) bool {
 	return method == "POST" || method == "PUT" || method == "DELETE"
 }
 
-var bilibiliRSSPath = regexp.MustCompile(`^/rss/bilibili/[0-9]+$`)
+var bilibiliRSSPath = regexp.MustCompile(`^/rss/bilibili/([0-9]+|watchlater/[^/]+)$`)
 
 var discordRSSPath = regexp.MustCompile(`^/rss/discord/channel/[^/]+/[^/]+$`)
 
