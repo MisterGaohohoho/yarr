@@ -3,9 +3,16 @@ on:
   push:
     tags:
       - v*
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to publish
+        required: true
+        type: string
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: lizhian/yarr
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
 jobs:
   build-and-push-image:
@@ -25,6 +32,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -40,7 +49,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          context: git
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest
 
       - name: Build and push Docker image
         id: build
@@ -99,6 +112,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.RELEASE_TAG }}
+            type=raw,value=latest
 
       - name: Create and push multi-platform manifest
         working-directory: ${{ runner.temp }}/digests
@@ -114,5 +130,5 @@ jobs:
 
       - name: Inspect multi-platform image
         run: |
-          docker buildx imagetools inspect --raw "$REGISTRY/$IMAGE_NAME:$GITHUB_REF_NAME" |
+          docker buildx imagetools inspect --raw "$REGISTRY/$IMAGE_NAME:$RELEASE_TAG" |
             jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] | sort == ["amd64", "arm64"]'
